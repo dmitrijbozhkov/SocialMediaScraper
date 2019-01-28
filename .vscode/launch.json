@@ -5,18 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File (Integrated Terminal)",
+            "name": "Run program",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceRoot}/__init__.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: Current File (External Terminal)",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceRoot}/__init__.py",
-            "console": "externalTerminal"
+            "cwd": "${workspaceRoot}",
+            "pythonPath": "${config:python.pythonPath}",
+            "module": "social_media_scraper",
+            "console": "integratedTerminal",
+            "env": {"PYTHONPATH":"${workspaceRoot}"},
         }
     ]
 }
