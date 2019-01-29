@@ -1,6 +1,7 @@
 """ User interface class """
 from tkinter import *
 from tkinter import messagebox
+from typing import List
 import tkinter.filedialog as filedialog
 from tkinter.scrolledtext import ScrolledText
 from social_media_scraper.commons import (prepare_database,
@@ -9,10 +10,11 @@ from social_media_scraper.commons import (prepare_database,
                                           read_input)
 from social_media_scraper.logging import (LogObserver,
                                           run_concurrently,
-                                          prepare_pool_scheduler)
+                                          prepare_pool_scheduler,
+                                          write_window)
 from social_media_scraper.person import process_person
 from social_media_scraper.twitter.compose import process_twitter
-
+from social_media_scraper.login import Credentials
 
 class Window(Frame):
     """ GUI class """
@@ -146,19 +148,20 @@ class Window(Frame):
             return False
         return True
 
-    def start_scraping_message(self):
-        """ Display message, that scraping is started """
-        self.debugLogField.config(state=NORMAL)
-        self.debugLogField.insert(END, "Starting scraping...\n")
-        self.debugLogField.config(state=DISABLED)
+    def get_credentials(self) -> List[Credentials]:
+        """ Get credentials from input fields """
+        return [
+            Credentials(self.linkedInUsername.get(), self.linkedInPassword.get()),
+            Credentials(self.xingUsername.get(), self.xingPassword.get())
+        ]
 
     def start_scraping(self):
         """ Start button callback to start scraping information """
         if self.check_startup_errors():
-            self.start_scraping_message()
+            write_window(self.debugLogField, "Starting scraping...")
             database_path = "{}/{}.db".format(self.outputFileDirectory, self.outputFileName.get())
             self.database = prepare_database(database_path)
-            self.driver = prepare_driver(self.showBrowser.get())
+            self.driver = prepare_driver(self.showBrowser.get(), self.get_credentials())
             read = read_input(self.inputFileName)
             self.file = read[0]
             scheduler = prepare_pool_scheduler()
@@ -172,3 +175,4 @@ class Window(Frame):
         if self.running_job:
             self.running_job.dispose()
             dispose_resources(self.file, self.driver, self.database.engine)
+            self.running_job = None

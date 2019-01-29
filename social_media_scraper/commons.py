@@ -2,6 +2,7 @@
 from collections import namedtuple
 import csv
 import re
+from typing import List
 from rx import Observable
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -9,6 +10,7 @@ from selenium.webdriver.firefox.options import Options
 from selenium import webdriver
 from cssselect import GenericTranslator
 from social_media_scraper.model import Base
+from social_media_scraper.login import login_social_media, Credentials
 
 DatabaseDrivers = namedtuple("DatabaseDrivers", ["engine", "scoped_factory"])
 
@@ -28,11 +30,12 @@ def prepare_database(path: str) -> DatabaseDrivers:
     scoped_factory = scoped_session(session_factory)
     return DatabaseDrivers(engine, scoped_factory)
 
-def prepare_driver(is_visible: bool) -> webdriver.Firefox:
+def prepare_driver(is_visible: bool, credentials: List[Credentials]) -> webdriver.Firefox:
     """ Setups drivers for each social network """
     driver_options = Options()
     driver_options.headless = not is_visible
     driver = webdriver.Firefox(options=driver_options)
+    login_social_media(driver, credentials)
     return driver
 
 def dispose_resources(file, driver, database):

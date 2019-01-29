@@ -60,7 +60,7 @@ def parse_stat_numbers(number: str):
     return int(number)
 
 def setup_twitter(driver: webdriver.Chrome, data: dict) -> TwitterAccount:
-    """ Collects data from twitter page """
+    """ Prepares twitter page to be scraped """
     driver.get(data["twitter"])
     scroll_untill_end(driver)
     html = driver.find_element_by_css_selector(CONTENT).get_attribute("innerHTML")
