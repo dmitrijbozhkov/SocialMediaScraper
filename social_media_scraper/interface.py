@@ -3,16 +3,16 @@ from tkinter import *
 from tkinter import messagebox
 import tkinter.filedialog as filedialog
 from tkinter.scrolledtext import ScrolledText
-from social_media_scraper.io.input import read_input
-from social_media_scraper.io.database import prepare_database
-from social_media_scraper.scraper.scraper import setup_driver, twitter_scraper
-from social_media_scraper.io.store import store_person, store_social_media
+from social_media_scraper.commons import (prepare_database,
+                                          prepare_driver,
+                                          dispose_resources,
+                                          read_input)
 from social_media_scraper.logging import (LogObserver,
                                           run_concurrently,
-                                          log_save_person_record,
-                                          log_save_twitter_account,
-                                          prepare_pool_scheduler,
-                                          dispose_resources)
+                                          prepare_pool_scheduler)
+from social_media_scraper.person import process_person
+from social_media_scraper.twitter.compose import process_twitter
+
 
 class Window(Frame):
     """ GUI class """
@@ -158,17 +158,14 @@ class Window(Frame):
             self.start_scraping_message()
             database_path = "{}/{}.db".format(self.outputFileDirectory, self.outputFileName.get())
             self.database = prepare_database(database_path)
-            self.driver = setup_driver(self.showBrowser.get())
+            self.driver = prepare_driver(self.showBrowser.get())
             read = read_input(self.inputFileName)
             self.file = read[0]
             scheduler = prepare_pool_scheduler()
-            log_people = log_save_person_record(read[1], self.debugLogField, self.master, scheduler)
-            people_stored = store_person(log_people, self.database.scoped_factory)
-            twitter = twitter_scraper(people_stored, self.driver)
-            log_twitter = log_save_twitter_account(twitter, self.debugLogField, self.master, scheduler)
-            saved_twittter = store_social_media(log_twitter, self.database.scoped_factory)
+            people = process_person(read[1], self.database.scoped_factory)
+            twitter = process_twitter(people, self.driver, self.database.scoped_factory)
             observer = LogObserver(self.debugLogField, self.database, self.driver, self.file)
-            self.running_job = run_concurrently(saved_twittter, observer, self.master, scheduler)
+            self.running_job = run_concurrently(twitter, observer, self.master, scheduler)
 
     def stop_scraping(self):
         """ Stop scraping callback to stop running scraper """
