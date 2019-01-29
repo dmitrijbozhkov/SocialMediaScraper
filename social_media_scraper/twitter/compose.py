@@ -1,6 +1,6 @@
 """ Functions for composing twitter processing pipeline """
-from rx import Observable
 from functools import partial
+from rx import Observable
 from selenium import webdriver
 from sqlalchemy.orm import scoped_session
 from social_media_scraper.commons import skip_empty

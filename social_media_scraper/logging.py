@@ -15,9 +15,13 @@ LinkedInLog = namedtuple("LinkedInLog", ["name", "position"])
 
 XingLog = namedtuple("XingLog", ["name", "position"])
 
-LOG_PERSON_MESSAGE_TEMPLATE = "Person record stored: {} with id {} \n"
+LOG_PERSON_MESSAGE_TEMPLATE = "Person record stored: {} with id {}\n"
 
-LOG_TWITTER_MESSAGE_TEMPLATE = "Twitter account @{} stored by name {} with {} subscribers \n"
+LOG_TWITTER_MESSAGE_TEMPLATE = "Twitter account @{} stored by name {} with {} subscribers\n"
+
+LOG_LINKED_IN_MESSAGE_TEMPLATE = "LinkedIn account of {} stored, currently occupying position: {}\n"
+
+LOG_XING_MESSAGE_TEMPLATE = "Xing account of {} stored, currently occupying position: {}\n"
 
 class LogObserver(Observer):
     """ Logs scraper actions on log window """
@@ -52,6 +56,10 @@ def prepare_message(data: dict) -> str:
     message = LOG_PERSON_MESSAGE_TEMPLATE.format(data["person"].name, data["person"].person_id)
     if data["twitter"]:
         message = message + LOG_TWITTER_MESSAGE_TEMPLATE.format(data["twitter"].name, data["twitter"].atName, data["twitter"].amountTweets)
+    if data["linkedIn"]:
+        message = message + LOG_LINKED_IN_MESSAGE_TEMPLATE.format(data["linkedIn"].name, data["linkedIn"].position)
+    if data["xing"]:
+        message = message + LOG_XING_MESSAGE_TEMPLATE.format(data["xing"].name, data["xing"].position)
     return message
 
 def run_concurrently(stream: Observable, observer: LogObserver, master: Tk, pool_scheduler):

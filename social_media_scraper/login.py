@@ -6,12 +6,6 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
-
-#LinkedIn and Xing
-#faster.than.fart@gmail.com
-#8246ghjK
-
 
 Credentials = namedtuple("Credentrials", ["username", "password"])
 

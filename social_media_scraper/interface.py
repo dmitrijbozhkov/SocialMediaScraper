@@ -14,12 +14,13 @@ from social_media_scraper.logging import (LogObserver,
                                           write_window)
 from social_media_scraper.person import process_person
 from social_media_scraper.twitter.compose import process_twitter
+from social_media_scraper.xing.compose import process_xing
+from social_media_scraper.linked_in.compose import process_linked_in
 from social_media_scraper.login import Credentials
 
 class Window(Frame):
     """ GUI class """
 
-    # def __init__(self, master, drivers):
     def __init__(self, master):
         Frame.__init__(self, master)
         self.master = master
@@ -28,7 +29,6 @@ class Window(Frame):
         self.outputFileDirectory = None
         self.running_job = None
         self.database = None
-        # self.drivers = drivers
         self.driver = None
         self.file = None
         self.init_window()
@@ -167,8 +167,10 @@ class Window(Frame):
             scheduler = prepare_pool_scheduler()
             people = process_person(read[1], self.database.scoped_factory)
             twitter = process_twitter(people, self.driver, self.database.scoped_factory)
+            linked_in = process_linked_in(twitter, self.driver, self.database.scoped_factory)
+            xing = process_xing(linked_in, self.driver, self.database.scoped_factory)
             observer = LogObserver(self.debugLogField, self.database, self.driver, self.file)
-            self.running_job = run_concurrently(twitter, observer, self.master, scheduler)
+            self.running_job = run_concurrently(xing, observer, self.master, scheduler)
 
     def stop_scraping(self):
         """ Stop scraping callback to stop running scraper """
