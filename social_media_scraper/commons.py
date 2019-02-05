@@ -1,61 +1,41 @@
-""" Common code accross program to manage external resources """
-from collections import namedtuple
-import csv
+""" Common code accross program """
 import re
-from typing import List
-from rx import Observable
-from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
-from selenium.webdriver.firefox.options import Options
-from selenium import webdriver
+import random
+from rx import Observable, Observer
 from cssselect import GenericTranslator
-from social_media_scraper.model import Base
-from social_media_scraper.login import login_social_media, Credentials
 
-DatabaseDrivers = namedtuple("DatabaseDrivers", ["engine", "scoped_factory"])
+TS = GenericTranslator()
 
-def read_input(filename: str) -> dict(person=str, twitter=str, linkedIn=str, xing=str):
-    """ Reads input csv file and returns observable """
-    file = open(filename)
-    records = Observable.defer(lambda: Observable.from_(csv.reader(file))) \
-        .skip(1) \
-        .map(lambda r: {"person": r[0], "twitter": r[1], "linkedIn": r[2], "xing": r[3]})
-    return (file, records)
+def fluctuate(left, right):
+    """ Generates random floating point number within a range """
+    while True:
+        yield random.uniform(left, right)
 
-def prepare_database(path: str) -> DatabaseDrivers:
-    """ Initializes database to write into """
-    engine = create_engine("sqlite:///" + path)
-    Base.metadata.create_all(engine)
-    session_factory = sessionmaker(bind=engine)
-    scoped_factory = scoped_session(session_factory)
-    return DatabaseDrivers(engine, scoped_factory)
+def throttle_random(stream: Observable, left, right):
+    """ Throttles requests, so that they come randomly in an interval """
+    throttle = Observable \
+        .from_(fluctuate(left, right)) \
+        .concat_map(lambda a: Observable.just(a).delay(a * 1000))
+    return Observable \
+        .zip(stream, throttle, lambda e, f: e)
 
-def prepare_driver(is_visible: bool, credentials: List[Credentials]) -> webdriver.Firefox:
-    """ Setups drivers for each social network """
-    driver_options = Options()
-    driver_options.headless = not is_visible
-    driver = webdriver.Firefox(options=driver_options)
-    login_social_media(driver, credentials)
-    return driver
-
-def dispose_resources(file, driver, database):
-    """ Disposes of used resources """
-    file.close()
-    driver.close()
-    database.dispose()
+def throttle_filtered(stream: Observable, item: str, left, right):
+    """ Throttles filtered items """
+    filtered = stream \
+        .filter(lambda r: r.get(item))
+    return throttle_random(filtered, left, right)
 
 def to_xpath(selector: str) -> str:
     """ Returns css selector for lxml """
-    return GenericTranslator().css_to_xpath(selector)
-
-def skip_empty(func, key: str):
-    """ Skips execution if record is empty """
-    def _inner_skip_empty(record: dict):
-        if record.get(key):
-            return func(Observable.just(record))
-        return Observable.just(record)
-    return _inner_skip_empty
+    return TS.css_to_xpath(selector)
 
 def extract_number(string: str) -> str:
     """ Searches for first number in string """
-    return re.search("[-+]?\d*\.\d+|\d+", string).group()
+    return re.search(r"[-+]?\d*\.\d+|\d+", string).group()
+
+def run_concurrently(stream: Observable, observer: Observer, tkinter_scheduler, pool_scheduler):
+    """ Subscribe and apply scedulers """
+    return stream \
+        .observe_on(tkinter_scheduler) \
+        .subscribe_on(pool_scheduler) \
+        .subscribe(observer)

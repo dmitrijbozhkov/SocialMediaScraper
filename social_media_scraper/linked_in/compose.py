@@ -1,21 +1,26 @@
-""" Functions for composing LinkedIn processing pipeline """
+""" Functions for composing and storing LinkedIn processing pipeline """
 from rx import Observable
-from functools import partial
 from selenium import webdriver
 from sqlalchemy.orm import scoped_session
-from social_media_scraper.commons import skip_empty
 from social_media_scraper.linked_in.process_page import setup_linked_in, collect_linked_in
-from social_media_scraper.linked_in.database import store_record
+from social_media_scraper.logging import LinkedInLog
+from social_media_scraper.model import Person
 
-def apply_linked_in(driver: webdriver.Firefox, session_factory: scoped_session, stream: Observable):
-    """ Applies browser setup processing """
+def store_record(session_factory: scoped_session, data: dict):
+    """ Refreshes Person record and attaches titter record to it """
+    account = data["linkedIn"]
+    session = session_factory()
+    person = session.query(Person).filter(Person.personId == data["person"].person_id).one()
+    account.person = person
+    session.add(account)
+    session.commit()
+    log = LinkedInLog(account.name, account.currentPosition)
+    session.close()
+    return log
+
+def process_linked_in(stream: Observable, driver: webdriver.Firefox, session_factory: scoped_session):
+    """ Applies twitter processing to only those records, that have twitter link """
     return stream \
         .flat_map(lambda r: Observable.just(setup_linked_in(driver, r))) \
         .flat_map(lambda r: Observable.just(collect_linked_in(r))) \
         .flat_map(lambda r: Observable.just(store_record(session_factory, r)))
-
-def process_linked_in(stream: Observable, driver: webdriver.Firefox, session_factory: scoped_session):
-    """ Applies twitter processing to only those records, that have twitter link """
-    processor = skip_empty(partial(apply_linked_in, driver, session_factory), "linkedIn")
-    return stream \
-        .flat_map(processor)

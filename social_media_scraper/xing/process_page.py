@@ -11,7 +11,7 @@ class XingPageSelectors(Enum):
     CURRENT_POSITION = to_xpath("div[data-qa='profile-occupations'] p")
     LOCATION = to_xpath("div[data-qa='profile-location'] p")
 
-CONTENT = "#main"
+CONTENT = "html"
 
 def setup_xing(driver: webdriver.Firefox, data: dict):
     """ Set ups LinkedIn page to be scraped """

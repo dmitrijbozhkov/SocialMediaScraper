@@ -1,44 +1,60 @@
-""" Methods to login into LinkedIn """
-from enum import Enum
-from typing import List
+""" Methods to login into social media """
+from typing import Dict, Tuple
 from collections import namedtuple
 from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 
-Credentials = namedtuple("Credentrials", ["username", "password"])
+LoginData = namedtuple("LoginData", ["cookies", "localstorage", "link"])
 
-class LinkedInPageSelectors(Enum):
-    """ Page selectors for LinkedIn login"""
-    USERNAME_INPUT = "#username"
-    PASSWORD_INPUT = "#password"
-    SUBMIT_BUTTON = ".login__form_action_container > button"
-    SUCCESS_ELEMENT = ".feed-container-theme.feed-outlet"
-
-class XingPageSelectors(Enum):
-    """ Page selectors for Xing login"""
-    USERNAME_INPUT = "#login_form_username"
-    PASSWORD_INPUT = "#login_form_password"
-    SUBMIT_BUTTON = "button[type='submit']"
-    SUCCESS_ELEMENT = ".myxing-profile-anchor"
-
+LINKED_IN_SUCCESS_ELEMENT = ".feed-container-theme.feed-outlet"
+XING_SUCCESS_ELEMENT = ".myxing-profile-anchor"
+LINKED_IN_404_PAGE = "https://www.linkedin.com/404"
+XING_404_PAGE = "https://xing.com/404"
 LINKED_IN_LOGIN_PAGE = "https://www.linkedin.com/uas/login"
 XING_LOGIN_PAGE = "https://login.xing.com/"
+LOGIN_WAIT_TIME = 3600
 
-def login_social_media(driver: webdriver.Firefox, credentials: List[Credentials]):
+def get_localstorage(driver: webdriver.Firefox) -> Dict[str, str]:
+    """ Load all data from localstorage """
+    return driver.execute_script(r"""var ls = window.localStorage;
+    var items = {};
+    var key;
+    for (var i = 0; i < ls.length; i += 1) {
+        key = ls.key(i)
+        items[key] = ls.getItem(key);
+    }
+    return items;""")
+
+def set_localstorage(driver: webdriver.Firefox, storage_items: Dict[str, str]):
+    """ Set all localstorage items """
+    for key in storage_items.keys():
+        driver.execute_script("window.localStorage.setItem(arguments[0], arguments[1]);",
+                              key,
+                              storage_items[key])
+
+def social_media_logins(options=Options()) -> Tuple[LoginData, LoginData]:
     """ Logs into LinkedIn account with provided credentials """
-    login(driver, credentials[0], LinkedInPageSelectors, LINKED_IN_LOGIN_PAGE)
-    login(driver, credentials[1], XingPageSelectors, XING_LOGIN_PAGE)
+    login_driver = webdriver.Firefox(options=options)
+    linked_in = login(login_driver, LINKED_IN_SUCCESS_ELEMENT, LINKED_IN_LOGIN_PAGE, LINKED_IN_404_PAGE)
+    xing = login(login_driver, XING_SUCCESS_ELEMENT, XING_LOGIN_PAGE, XING_404_PAGE)
+    login_driver.close()
+    return (linked_in, xing)
 
-def login(driver: webdriver.Firefox, credentials: Credentials, selectors, link: str):
+def login(driver: webdriver.Firefox, success_selector, link: str, empty_link: str) -> LoginData:
     """ Logs into provided account """
     driver.get(link)
-    username_field = driver.find_element_by_css_selector(selectors.USERNAME_INPUT.value)
-    password_field = driver.find_element_by_css_selector(selectors.PASSWORD_INPUT.value)
-    submit_button = driver.find_element_by_css_selector(selectors.SUBMIT_BUTTON.value)
-    username_field.send_keys(credentials.username)
-    password_field.send_keys(credentials.password)
-    submit_button.click()
-    wait = WebDriverWait(driver, 10)
-    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selectors.SUCCESS_ELEMENT.value)))
+    wait = WebDriverWait(driver, LOGIN_WAIT_TIME)
+    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, success_selector)))
+    cookies = driver.get_cookies()
+    localstorage = get_localstorage(driver)
+    return LoginData(cookies, localstorage, empty_link)
+
+def set_login_data(driver: webdriver.Firefox, login_data: LoginData):
+    """ Goes to 404 page of each site in order to set authentication data """
+    driver.get(login_data.link)
+    for cookie in login_data.cookies:
+        driver.add_cookie(cookie)
+    set_localstorage(driver, login_data.localstorage)
