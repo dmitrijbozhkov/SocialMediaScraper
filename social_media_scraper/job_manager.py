@@ -136,11 +136,14 @@ class BrowserManager(object):
         """ Initializes scraper browser drivers """
         logins = social_media_logins()
         driver_options = Options()
+        profile = webdriver.FirefoxProfile()
+        profile.set_preference("intl.accept_languages", "en-us")
+        profile.update_preferences()
         driver_options.headless = not is_visible
         self._browsers = BrowserDrivers(
-            webdriver.Firefox(options=driver_options),
-            webdriver.Firefox(options=driver_options),
-            webdriver.Firefox(options=driver_options))
+            webdriver.Firefox(options=driver_options, firefox_profile=profile),
+            webdriver.Firefox(options=driver_options, firefox_profile=profile),
+            webdriver.Firefox(options=driver_options, firefox_profile=profile))
         set_login_data(self._browsers.linkedIn, logins[0])
         set_login_data(self._browsers.xing, logins[1])
         return StreamManager(self._database, self._browsers)
