@@ -34,16 +34,16 @@ JobSchedulers = namedtuple("JobSchedulers", ["tkinter", "pool"])
 class JobManager(object):
     """ Manages running job """
 
-    def __init__(self, file, database, browsers, job, connectables):
+    def __init__(self, file, database, browsers, job, connectable):
         self._file = file
         self._database = database
         self._browsers = browsers
         self._job = job
-        self._connectables = connectables
+        self._connectable = connectable
 
     def start_scraping(self):
         """ Starts job """
-        self._connectables["person"].connect()
+        self._connectable.connect()
 
     def _dispose(self):
         """ Disposes external resources """
@@ -66,34 +66,29 @@ class StreamManager(object):
         self._database: DatabaseDrivers = database
         self._browsers: BrowserDrivers = browsers
         self._datastreams: dict = {}
-        self._connectables: dict = {}
+        self._connectable = None
         self._file = None
         self._schedulers: JobSchedulers = None
 
     def process_person(self, filename: str):
         """ Prepares input file for reading """
-        file = open(filename, "r")
-        records = Observable.defer(lambda: Observable.from_(csv.reader(file))) \
+        self._file = open(filename, "r")
+        self._connectable = Observable.defer(lambda: Observable.from_(csv.reader(self._file))) \
             .skip(1) \
             .map(lambda r: {"person": r[0], "twitter": r[1], "linkedIn": r[2], "xing": r[3]}) \
             .flat_map(lambda r: Observable.just(store_person_record(self._database.scoped_factory, r))) \
             .publish()
-        self._connectables["person"] = records
-        self._file = file
         return self
 
     def compose_streams(self, left, right):
         """ Composes datastreams """
-        person = self._connectables["person"].ref_count()
+        person = self._connectable.ref_count()
         twitter_stream = throttle_filtered(person, "twitter", left, right)
         linked_in_stream = throttle_filtered(person, "linkedIn", left, right)
         xing_stream = throttle_filtered(person, "xing", left, right)
-        self._connectables["twitter"] = process_twitter(twitter_stream, self._browsers.twitter, self._database.scoped_factory)
-        self._connectables["linkedIn"] = process_linked_in(linked_in_stream, self._browsers.linkedIn, self._database.scoped_factory)
-        self._connectables["xing"] = process_xing(xing_stream, self._browsers.xing, self._database.scoped_factory)
-        twitter_logs = self._connectables["twitter"].ref_count()
-        linked_in_logs = self._connectables["linkedIn"].ref_count()
-        xing_logs = self._connectables["xing"].ref_count()
+        twitter_logs = process_twitter(twitter_stream, self._browsers.twitter, self._database.scoped_factory)
+        linked_in_logs = process_linked_in(linked_in_stream, self._browsers.linkedIn, self._database.scoped_factory)
+        xing_logs = process_xing(xing_stream, self._browsers.xing, self._database.scoped_factory)
         job_stream = Observable \
             .zip(person, twitter_logs, linked_in_logs, xing_logs, lambda a, b, c, d: a) \
             .ignore_elements()
@@ -128,7 +123,7 @@ class StreamManager(object):
             "xing": run_concurrently(self._datastreams["xing"], xing_sub, self._schedulers.tkinter, self._schedulers.pool),
             "job": run_concurrently(self._datastreams["job"], job_sub, self._schedulers.tkinter, self._schedulers.pool)
         }
-        return JobManager(self._file, self._database, self._browsers, job, self._connectables)
+        return JobManager(self._file, self._database, self._browsers, job, self._connectable)
 
 class BrowserManager(object):
     """ Manages initializing browser """

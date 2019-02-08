@@ -7,6 +7,9 @@ from tkinter.scrolledtext import ScrolledText
 from social_media_scraper.job_manager import DatabaseManager
 from social_media_scraper.logging import write_window
 
+INPUT_PLACEHOLDER = "Choose input file name..."
+OUTPUT_PLACEHOLDER = "Choose output directory..."
+
 class Window(Frame):
     """ GUI class """
 
@@ -29,6 +32,7 @@ class Window(Frame):
         self.init_choose_input_file()
         self.init_choose_output_directory()
         self.init_output_file_name_input()
+        self.init_wait_time()
         self.init_debug_menu()
         self.init_footer_buttons()
 
@@ -36,54 +40,67 @@ class Window(Frame):
         """ Initializes input file choosing dialogue """
         self.inputButton = Button(self, text="Choose", command=self.choose_input_file)
         self.inputButton.grid(column=0, row=0)
-        self.inputFileNameLabel = Entry(self, text="Choose input file...")
+        self.inputFileNameLabel = Entry(self, width=40, disabledforeground="black")
+        set_entry(self.inputFileNameLabel, INPUT_PLACEHOLDER)
         self.inputFileNameLabel.grid(column=1, row=0, columnspan=3)
 
     def init_choose_output_directory(self):
         """ Initializes output directory choosing dialogue """
         self.outputDirectoryButton = Button(self, text="Choose", command=self.choose_output_directory)
         self.outputDirectoryButton.grid(column=0, row=1)
-        self.outputDirectoryNameLabel = Entry(self, text="Choose output directory...")
+        self.outputDirectoryNameLabel = Entry(self, width=40, disabledforeground="black")
+        set_entry(self.outputDirectoryNameLabel, OUTPUT_PLACEHOLDER)
         self.outputDirectoryNameLabel.grid(column=1, row=1, columnspan=3)
 
     def init_output_file_name_input(self):
         """ Initializes output file name input """
         self.outputFileNameLabel = Label(self, text="Output file Name")
         self.outputFileNameLabel.grid(column=0, row=2)
-        self.outputFileName = Entry(self, width=35)
+        self.outputFileName = Entry(self, width=40)
         self.outputFileName.grid(column=1, row=2)
+
+    def init_wait_time(self):
+        """ Initializes fields for setting time between requests """
+        self.wait_label = Label(self, text="Time between requests")
+        self.wait_label.grid(column=0, row=3, columnspan=4)
+        self.wait_min = Entry(self, width=4)
+        self.wait_max = Entry(self, width=4)
+        Placeholder(self.wait_min, "Min").init_placeholder()
+        Placeholder(self.wait_max, "Max").init_placeholder()
+        self.wait_min.grid(column=0, row=4)
+        self.wait_max.grid(column=1, row=4)
 
     def init_debug_menu(self):
         """ Initializes show browsers checker and debug log """
         self.showBrowserCheck = Checkbutton(self, text="show browser", variable=self.showBrowser)
-        self.showBrowserCheck.grid(column=0, row=9)
+        self.showBrowserCheck.grid(column=0, row=5)
         self.debugLogLabel = Label(self, text="Debg log")
-        self.debugLogLabel.grid(column=0, row=10)
+        self.debugLogLabel.grid(column=0, row=6)
         self.debugLogField = ScrolledText(self, height=10, width=53)
-        self.debugLogField.grid(column=0, row=11, columnspan=4)
+        self.debugLogField.grid(column=0, row=7, columnspan=4)
         self.debugLogField.config(state=DISABLED)
 
     def init_footer_buttons(self):
         """ Intializes start and stop buttons """
         self.startButton = Button(self, text="Start", command=self.start_scraping)
-        self.startButton.grid(column=1, row=12)
+        self.startButton.grid(column=1, row=8)
         self.stopButton = Button(self, text="Stop", command=self.stop_scraping)
-        self.stopButton.grid(column=0, row=12)
+        self.stopButton.grid(column=0, row=8)
 
     def choose_input_file(self):
         """ Choose input file button callback """
         chosen = filedialog.askopenfilename(filetypes=[("Comma Separated Values File","*.csv")])
         if chosen:
             self.inputFileName = chosen
-            self.inputFileNameLabel.config(text=self.inputFileName)
+            set_entry(self.inputFileNameLabel, self.inputFileName)
 
     def choose_output_directory(self):
         """ Choose output directory button callback """
         chosen = filedialog.askdirectory()
         if chosen:
             self.outputFileDirectory = chosen
-            self.outputDirectoryNameLabel.config(text=self.outputFileDirectory)
- 
+            set_entry(self.outputDirectoryNameLabel, self.outputFileDirectory)
+
     def check_startup_errors(self):
         """ Checks for startup errors on startup """
         if not self.inputFileName:
@@ -95,6 +112,15 @@ class Window(Frame):
         if not self.outputFileName.get():
             messagebox.showerror("Error", "Please provide output file name")
             return False
+        try:
+            request_min = int(self.wait_min.get())
+            request_max = int(self.wait_max.get())
+            if request_min > request_max:
+                messagebox.showerror("Error", "min value cannot be bigger, than max")
+                return False
+        except ValueError:
+            messagebox.showerror("Error", "Please provide correct min and max time between requests")
+            return False
         return True
 
     def start_scraping(self):
@@ -103,11 +129,13 @@ class Window(Frame):
             write_window(self.debugLogField, "Starting scraping...")
             database_path = "{}/{}.db".format(self.outputFileDirectory, self.outputFileName.get())
             job = DatabaseManager()
+            request_min = int(self.wait_min.get())
+            request_max = int(self.wait_max.get())
             self.running_job = job.init_database(database_path) \
                 .init_drivers(self.showBrowser.get()) \
                 .init_schedulers(self.master) \
                 .process_person(self.inputFileName) \
-                .compose_streams(1, 3) \
+                .compose_streams(request_min, request_max) \
                 .init_job(self.debugLogField) \
                 .start_scraping()
 
@@ -116,3 +144,36 @@ class Window(Frame):
         if self.running_job:
             self.running_job.stop_scraping()
             self.running_job = None
+
+def set_entry(entry, message):
+    """ Appends text to window """
+    entry.config(state=NORMAL)
+    entry.delete(0, END)
+    entry.insert(0, message)
+    entry.config(state=DISABLED)
+
+class Placeholder(object):
+    """ Adds placeholder to an Entry """
+
+    def __init__(self, entry, placeholder):
+        self.entry = entry
+        self.placeholder = placeholder
+        self.with_placeholder = True
+    
+    def on_focusin(self, event):
+        """ <FocusIn> event handler """
+        if self.with_placeholder:
+            self.entry.delete(0, "end")
+            self.with_placeholder = False
+
+    def on_focusout(self, event):
+        """ <FocusOut> event handler """
+        if self.entry.get() == "":
+            self.entry.insert(0, self.placeholder)
+            self.with_placeholder = True
+
+    def init_placeholder(self):
+        """ Binds placeholder events """
+        self.entry.insert(0, self.placeholder)
+        self.entry.bind("<FocusIn>", self.on_focusin, add="+")
+        self.entry.bind("<FocusOut>", self.on_focusout, add="+")
