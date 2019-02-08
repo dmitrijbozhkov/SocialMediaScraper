@@ -23,4 +23,5 @@ def process_linked_in(stream: Observable, driver: webdriver.Firefox, session_fac
     return stream \
         .flat_map(lambda r: Observable.just(setup_linked_in(driver, r))) \
         .flat_map(lambda r: Observable.just(collect_linked_in(r))) \
-        .flat_map(lambda r: Observable.just(store_record(session_factory, r)))
+        .flat_map(lambda r: Observable.just(store_record(session_factory, r))) \
+        .share()

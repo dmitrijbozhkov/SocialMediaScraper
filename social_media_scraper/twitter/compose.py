@@ -23,4 +23,5 @@ def process_twitter(stream: Observable, driver: webdriver.Firefox, session_facto
     return stream \
         .flat_map(lambda r: Observable.just(setup_twitter(driver, r))) \
         .flat_map(lambda r: Observable.just(collect_twitter(r))) \
-        .flat_map(lambda r: Observable.just(store_record(session_factory, r)))
+        .flat_map(lambda r: Observable.just(store_record(session_factory, r))) \
+        .share()

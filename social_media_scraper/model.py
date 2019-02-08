@@ -1,47 +1,17 @@
 """ Description of database model """
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Table, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
-
-xing_account_have = Table("XingAccountHave", Base.metadata,
-    Column("xingAccountId", Integer, ForeignKey("XingAccount.xingAccountId")),
-    Column("xingHaveId", Integer, ForeignKey("XingHave.xingHaveId"))
-)
-
-class XingHave(Base):
-    __tablename__ = "XingHave"
-    xingHaveId = Column(Integer, primary_key=True, autoincrement=True)
-    haveName = Column(String)
-    xingAccounts = relationship("XingAccount", secondary=xing_account_have, back_populates="xingHaves")
-
-xing_account_want = Table("XingAccountWant", Base.metadata,
-    Column("xingAccountId", Integer, ForeignKey("XingAccount.xingAccountId")),
-    Column("xingWantId", Integer, ForeignKey("XingWant.xingWantId"))
-)
-
-class XingWant(Base):
-    __tablename__ = "XingWant"
-    xingWantId = Column(Integer, primary_key=True, autoincrement=True)
-    wantName = Column(String)
-    xingAccounts = relationship("XingAccount", secondary=xing_account_want, back_populates="xingWants")
 
 class XingWorkExperience(Base):
     __tablename__ = "XingWorkExperience"
     xingWorkExperienceId = Column(Integer, primary_key=True, autoincrement=True)
     position = Column(String)
     companyName = Column(String)
-    beginDate = Column(String)
-    endDate = Column(String)
-    timeWorked = Column(String)
-    industry = Column(String)
-    organisationType = Column(String)
-    employess = Column(String)
-    employment = Column(String)
-    timeWorked = Column(String)
-    careerLevel = Column(String)
-    discipline = Column(String)
+    startDate = Column(DateTime)
+    endDate = Column(DateTime)
     xingAccountId = Column(Integer, ForeignKey("XingAccount.xingAccountId"))
     xingAccount = relationship("XingAccount", back_populates="xingWorkExperiences")
 
@@ -52,28 +22,27 @@ class XingAccount(Base):
     name = Column(String, nullable=False)
     currentPosition = Column(String)
     locaton = Column(String)
+    haves = Column(String)
+    wants = Column(String)
     person = relationship("Person", back_populates="xingAccount", uselist=False)
     xingWorkExperiences = relationship("XingWorkExperience", back_populates="xingAccount")
-    xingHaves = relationship("XingHave", secondary=xing_account_have, back_populates="xingAccounts")
-    xingWants = relationship("XingWant", secondary=xing_account_want, back_populates="xingAccounts")
 
 class LinkedInEducation(Base):
     __tablename__ = "LinkedInEducation"
     linkedInEducationId = Column(Integer, primary_key=True, autoincrement=True)
     facilityName = Column(String)
     degreeName = Column(String)
-    beginDate = Column(String)
-    endDate = Column(String)
+    specialtyName = Column(String)
+    dateRange = Column(String)
     linkedInAccountId = Column(Integer, ForeignKey("LinkedInAccount.linkedInAccountId"))
-    linkedInAccount = relationship("LinkedInAccount", back_populates="linkedInEducation")
+    linkedInAccount = relationship("LinkedInAccount", back_populates="linkedInEducations")
 
 class LinkedInWorkExperience(Base):
     __tablename__ = "LinkedInWorkExperience"
     linkedInWorkExperienceId = Column(Integer, primary_key=True, autoincrement=True)
     position = Column(String)
     companyName = Column(String)
-    beginDate = Column(String)
-    endDate = Column(String)
+    dateRange = Column(String)
     timeWorked = Column(String)
     location = Column(String)
     description = Column(String)
@@ -89,7 +58,7 @@ class LinkedInAccount(Base):
     locaton = Column(String)
     person = relationship("Person", back_populates="linkedInAccount", uselist=False)
     linkedInWorkExperiences = relationship("LinkedInWorkExperience", back_populates="linkedInAccount")
-    linkedInEducation = relationship("LinkedInEducation", back_populates="linkedInAccount")
+    linkedInEducations = relationship("LinkedInEducation", back_populates="linkedInAccount")
 
 class TwitterAccountDetails(Base):
     __tablename__ = "TwitterAccountDetails"

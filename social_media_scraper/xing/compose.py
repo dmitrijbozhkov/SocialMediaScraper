@@ -23,4 +23,5 @@ def process_xing(stream: Observable, driver: webdriver.Firefox, session_factory:
     return stream \
         .flat_map(lambda r: Observable.just(setup_xing(driver, r))) \
         .flat_map(lambda r: Observable.just(collect_xing(r))) \
-        .flat_map(lambda r: Observable.just(store_record(session_factory, r)))
+        .flat_map(lambda r: Observable.just(store_record(session_factory, r))) \
+        .share()

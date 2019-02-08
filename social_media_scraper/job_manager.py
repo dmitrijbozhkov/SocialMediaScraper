@@ -3,7 +3,7 @@ from collections import namedtuple
 import csv
 from tkinter import Tk
 import multiprocessing
-from rx import Observable, Observer
+from rx import Observable
 from rx.concurrency.mainloopscheduler import TkinterScheduler
 from rx.concurrency import ThreadPoolScheduler
 from sqlalchemy import create_engine
@@ -29,23 +29,21 @@ DatabaseDrivers = namedtuple("DatabaseDrivers", ["engine", "scoped_factory"])
 
 BrowserDrivers = namedtuple("BrowserDrivers", ["twitter", "linkedIn", "xing"])
 
-InputItems = namedtuple("InputItems", ["file", "records"])
-
 JobSchedulers = namedtuple("JobSchedulers", ["tkinter", "pool"])
 
 class JobManager(object):
     """ Manages running job """
 
-    def __init__(self, file, database, browsers, job, startup):
+    def __init__(self, file, database, browsers, job, connectables):
         self._file = file
         self._database = database
         self._browsers = browsers
         self._job = job
-        self._startup = startup
+        self._connectables = connectables
 
     def start_scraping(self):
         """ Starts job """
-        self._startup.connect()
+        self._connectables["person"].connect()
 
     def _dispose(self):
         """ Disposes external resources """
@@ -68,7 +66,8 @@ class StreamManager(object):
         self._database: DatabaseDrivers = database
         self._browsers: BrowserDrivers = browsers
         self._datastreams: dict = {}
-        self._input: InputItems = None
+        self._connectables: dict = {}
+        self._file = None
         self._schedulers: JobSchedulers = None
 
     def process_person(self, filename: str):
@@ -79,22 +78,27 @@ class StreamManager(object):
             .map(lambda r: {"person": r[0], "twitter": r[1], "linkedIn": r[2], "xing": r[3]}) \
             .flat_map(lambda r: Observable.just(store_person_record(self._database.scoped_factory, r))) \
             .publish()
-        self._input = InputItems(file, records)
+        self._connectables["person"] = records
+        self._file = file
         return self
 
     def compose_streams(self, left, right):
         """ Composes datastreams """
-        twitter_stream = throttle_filtered(self._input.records, "twitter", left, right)
-        linked_in_stream = throttle_filtered(self._input.records, "linkedIn", left, right)
-        xing_stream = throttle_filtered(self._input.records, "xing", left, right)
-        twitter_logs = process_twitter(twitter_stream, self._browsers.twitter, self._database.scoped_factory)
-        linked_in_logs = process_linked_in(linked_in_stream, self._browsers.linkedIn, self._database.scoped_factory)
-        xing_logs = process_xing(xing_stream, self._browsers.xing, self._database.scoped_factory)
+        person = self._connectables["person"].ref_count()
+        twitter_stream = throttle_filtered(person, "twitter", left, right)
+        linked_in_stream = throttle_filtered(person, "linkedIn", left, right)
+        xing_stream = throttle_filtered(person, "xing", left, right)
+        self._connectables["twitter"] = process_twitter(twitter_stream, self._browsers.twitter, self._database.scoped_factory)
+        self._connectables["linkedIn"] = process_linked_in(linked_in_stream, self._browsers.linkedIn, self._database.scoped_factory)
+        self._connectables["xing"] = process_xing(xing_stream, self._browsers.xing, self._database.scoped_factory)
+        twitter_logs = self._connectables["twitter"].ref_count()
+        linked_in_logs = self._connectables["linkedIn"].ref_count()
+        xing_logs = self._connectables["xing"].ref_count()
         job_stream = Observable \
-            .zip(self._input.records, twitter_logs, linked_in_logs, xing_logs, lambda a, b, c, d: a) \
+            .zip(person, twitter_logs, linked_in_logs, xing_logs, lambda a, b, c, d: a) \
             .ignore_elements()
         self._datastreams = {
-            "person": log_person(self._input.records),
+            "person": log_person(person),
             "twitter": twitter_logs,
             "linkedIn": linked_in_logs,
             "xing": xing_logs,
@@ -116,7 +120,7 @@ class StreamManager(object):
         twitter_sub = SocialMediaObserver(log_window, LOG_TWITTER_MESSAGE_TEMPLATE, self._browsers.twitter)
         linked_in_sub = SocialMediaObserver(log_window, LOG_LINKED_IN_MESSAGE_TEMPLATE, self._browsers.linkedIn)
         xing_sub = SocialMediaObserver(log_window, LOG_XING_MESSAGE_TEMPLATE, self._browsers.xing)
-        job_sub = JobObserver(log_window, self._database.engine, self._input.file)
+        job_sub = JobObserver(log_window, self._database.engine, self._file)
         job = {
             "person": run_concurrently(self._datastreams["person"], person_sub, self._schedulers.tkinter, self._schedulers.pool),
             "twitter": run_concurrently(self._datastreams["twitter"], twitter_sub, self._schedulers.tkinter, self._schedulers.pool),
@@ -124,7 +128,7 @@ class StreamManager(object):
             "xing": run_concurrently(self._datastreams["xing"], xing_sub, self._schedulers.tkinter, self._schedulers.pool),
             "job": run_concurrently(self._datastreams["job"], job_sub, self._schedulers.tkinter, self._schedulers.pool)
         }
-        return JobManager(self._input.file, self._database, self._browsers, job, self._input.records)
+        return JobManager(self._file, self._database, self._browsers, job, self._connectables)
 
 class BrowserManager(object):
     """ Manages initializing browser """
