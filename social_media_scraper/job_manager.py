@@ -41,9 +41,10 @@ class JobManager(object):
         self._job = job
         self._connectable = connectable
 
-    def start_scraping(self):
+    def begin_scraping(self):
         """ Starts job """
         self._connectable.connect()
+        return self
 
     def _dispose(self):
         """ Disposes external resources """

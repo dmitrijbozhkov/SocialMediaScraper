@@ -89,7 +89,7 @@ class Window(Frame):
 
     def choose_input_file(self):
         """ Choose input file button callback """
-        chosen = filedialog.askopenfilename(filetypes=[("Comma Separated Values File","*.csv")])
+        chosen = filedialog.askopenfilename(filetypes=[("Comma Separated Values File", "*.csv")])
         if chosen:
             self.input_file_name = chosen
             set_entry(self.input_file_name_label, self.input_file_name)
@@ -137,7 +137,7 @@ class Window(Frame):
                 .process_person(self.input_file_name) \
                 .compose_streams(request_min, request_max) \
                 .init_job(self.debug_log_field) \
-                .start_scraping()
+                .begin_scraping()
 
     def stop_scraping(self):
         """ Stop scraping callback to stop running scraper """
@@ -159,7 +159,7 @@ class Placeholder(object):
         self.entry = entry
         self.placeholder = placeholder
         self.with_placeholder = True
-    
+
     def on_focusin(self, event):
         """ <FocusIn> event handler """
         if self.with_placeholder:

@@ -31,6 +31,7 @@ TWEET_AMOUNT_LIKES = to_xpath(".ProfileTweet-action--favorite .ProfileTweet-acti
 # Twitter 
 STREAM_HAS_MORE_TWEETS = ".has-more-items"
 CONTENT = "#page-container"
+ENGLISH_QUERY = "?lang=en"
 
 def scroll_untill_end(driver: webdriver.Chrome):
     """ Scrolls down untill all tweets are loaded """
@@ -56,9 +57,13 @@ def parse_stat_numbers(number: str):
         return int(float(number[0:-1]) * 1000)
     return int(number)
 
+def prepare_english_link(link: str):
+    """ Make twitter interface appear in english """
+    return link if ENGLISH_QUERY in link else link + ENGLISH_QUERY
+
 def setup_twitter(driver: webdriver.Chrome, data: dict) -> TwitterAccount:
     """ Prepares twitter page to be scraped """
-    driver.get(data["twitter"])
+    driver.get(prepare_english_link(data["twitter"]))
     scroll_untill_end(driver)
     html = driver.find_element_by_css_selector(CONTENT).get_attribute("innerHTML")
     data["twitter"] = PageContent(fromstring(html), data["twitter"])
