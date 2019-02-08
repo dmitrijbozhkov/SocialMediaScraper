@@ -1,5 +1,6 @@
 """ Browser operations for selenium driver and data gathering """
 from datetime import datetime as dt
+from collections import namedtuple
 from selenium import webdriver
 from lxml.html import fromstring
 from lxml import etree as tr
@@ -7,6 +8,8 @@ from social_media_scraper.commons import to_xpath, scroll_bottom, check_if_prese
 from social_media_scraper.model import (Tweet,
                                         TwitterAccount,
                                         TwitterAccountDetails)
+
+PageContent = namedtuple("PageContent", ["page", "link"])
 
 # Twitter profile selectors
 PROFILE_NAME = to_xpath(".ProfileHeaderCard-nameLink")
@@ -58,7 +61,7 @@ def setup_twitter(driver: webdriver.Chrome, data: dict) -> TwitterAccount:
     driver.get(data["twitter"])
     scroll_untill_end(driver)
     html = driver.find_element_by_css_selector(CONTENT).get_attribute("innerHTML")
-    data["twitter"] = fromstring(html)
+    data["twitter"] = PageContent(fromstring(html), data["twitter"])
     return data
 
 def collect_tweets(page):
@@ -82,12 +85,13 @@ def collect_tweets(page):
 
 def collect_twitter(data: dict):
     """ Gathers data from twitter page """
-    page = data["twitter"]
+    page = data["twitter"].page
     tweet_amount = collect_element(page, TWEET_AMOUNT)
     subscriptions_amount = collect_element(page, SUBSCRIPTIONS_AMOUNT)
     subscribers_amount = collect_element(page, SUBSCRIBERS_AMOUNT)
     likes_amount = collect_element(page, PROFILE_LIKES_AMOUNT)
     account = TwitterAccount(
+        twitterAccountId=data["twitter"].link,
         name=collect_element(page, PROFILE_NAME),
         atName=collect_element(page, ACCOUNT_NAME))
     account_details = TwitterAccountDetails(

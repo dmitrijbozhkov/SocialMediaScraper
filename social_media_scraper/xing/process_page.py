@@ -11,7 +11,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 
-PageContent = namedtuple("PageContent", ["outer", "inner"])
+PageContent = namedtuple("PageContent", ["outer", "inner", "link"])
 
 # Xing profile selectors
 NAME = to_xpath("h2[data-qa='malt-profile-display-name'] > span")
@@ -49,7 +49,7 @@ def setup_xing(driver: webdriver.Firefox, data: dict):
     wait.until(EC.presence_of_element_located((By.XPATH, NAME)))
     outer_html = driver.find_element_by_css_selector(OUTER_CONTENT).get_attribute("innerHTML")
     inner_html = get_inner_html(driver)
-    data["xing"] = PageContent(fromstring(outer_html), fromstring(inner_html))
+    data["xing"] = PageContent(fromstring(outer_html), fromstring(inner_html), data["xing"])
     return data
 
 def get_content(element):
@@ -110,6 +110,7 @@ def collect_xing(data: dict):
     tags = collect_tags(inner_page)
     work_experience = collect_work_experience(inner_page)
     data["xing"] = XingAccount(
+        xingAccountId=data["xing"].link,
         name=collect_element(outer_page, NAME),
         currentPosition=collect_element(outer_page, CURRENT_POSITION),
         locaton=collect_element(outer_page, LOCATION),

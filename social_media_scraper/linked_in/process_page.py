@@ -1,8 +1,11 @@
 """ Browser operations and LinkedIn page profile scraping """
 from typing import List
+from collections import namedtuple
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 from lxml.html import fromstring
 from social_media_scraper.model import LinkedInAccount, LinkedInWorkExperience, LinkedInEducation
 from social_media_scraper.commons import (to_xpath,
@@ -10,6 +13,8 @@ from social_media_scraper.commons import (to_xpath,
                                           check_if_present,
                                           collect_element,
                                           click_all)
+
+PageContent = namedtuple("PageContent", ["page", "link"])
 
 # LinkedIn user info page selectors
 NAME = to_xpath(".pv-top-card-section__name")
@@ -67,8 +72,9 @@ def setup_linked_in(driver: webdriver.Firefox, data: dict):
         pass
     open_list(driver, COMPANY_TIMELINE_BUTTONS, MORE_LOCATOR, LESS_LOCATOR)
     click_all(driver, EXPERIENCE_DESCRIPTION_MORE)
+    WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, CONTENT)))
     html = driver.find_element_by_css_selector(CONTENT).get_attribute("innerHTML")
-    data["linkedIn"] = fromstring(html)
+    data["linkedIn"] = PageContent(fromstring(html), data["linkedIn"])
     return data
 
 def collect_timeline_experience(element, timeline) -> List[LinkedInWorkExperience]:
@@ -116,13 +122,14 @@ def collect_education(page):
 
 def collect_linked_in(data: dict):
     """ Gathers data rom LinkedIn page """
-    page = data["linkedIn"]
+    page = data["linkedIn"].page
     name = collect_element(page, NAME)
     current_position = collect_element(page, CURRENT_POSITION)
     location = collect_element(page, LOCATION)
     experiences = collect_experience(page)
     education_records = collect_education(page)
     data["linkedIn"] = LinkedInAccount(
+        linkedInAccountId=data["linkedIn"].link,
         name=name,
         currentPosition=current_position,
         locaton=location,

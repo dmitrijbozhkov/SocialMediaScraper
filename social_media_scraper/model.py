@@ -12,13 +12,13 @@ class XingWorkExperience(Base):
     companyName = Column(String)
     startDate = Column(DateTime)
     endDate = Column(DateTime)
-    xingAccountId = Column(Integer, ForeignKey("XingAccount.xingAccountId"))
+    xingAccountId = Column(String, ForeignKey("XingAccount.xingAccountId"))
     xingAccount = relationship("XingAccount", back_populates="xingWorkExperiences")
 
 class XingAccount(Base):
     """ Table for Xing accounts """
     __tablename__ = "XingAccount"
-    xingAccountId = Column(Integer, primary_key=True, autoincrement=True)
+    xingAccountId = Column(String, primary_key=True)
     name = Column(String, nullable=False)
     currentPosition = Column(String)
     locaton = Column(String)
@@ -34,7 +34,7 @@ class LinkedInEducation(Base):
     degreeName = Column(String)
     specialtyName = Column(String)
     dateRange = Column(String)
-    linkedInAccountId = Column(Integer, ForeignKey("LinkedInAccount.linkedInAccountId"))
+    linkedInAccountId = Column(String, ForeignKey("LinkedInAccount.linkedInAccountId"))
     linkedInAccount = relationship("LinkedInAccount", back_populates="linkedInEducations")
 
 class LinkedInWorkExperience(Base):
@@ -46,13 +46,13 @@ class LinkedInWorkExperience(Base):
     timeWorked = Column(String)
     location = Column(String)
     description = Column(String)
-    linkedInAccountId = Column(Integer, ForeignKey("LinkedInAccount.linkedInAccountId"))
+    linkedInAccountId = Column(String, ForeignKey("LinkedInAccount.linkedInAccountId"))
     linkedInAccount = relationship("LinkedInAccount", back_populates="linkedInWorkExperiences")
 
 class LinkedInAccount(Base):
     """ Table for LinkedIn accounts """
     __tablename__ = "LinkedInAccount"
-    linkedInAccountId = Column(Integer, primary_key=True, autoincrement=True)
+    linkedInAccountId = Column(String, primary_key=True)
     name = Column(String, nullable=False)
     currentPosition = Column(String)
     locaton = Column(String)
@@ -81,13 +81,13 @@ class Tweet(Base):
     amountComments = Column(Integer)
     amountRetweets = Column(Integer)
     amountLikes = Column(Integer)
-    twitterAccountId = Column(Integer, ForeignKey("TwitterAccount.twitterAccountId"))
+    twitterAccountId = Column(String, ForeignKey("TwitterAccount.twitterAccountId"))
     twitterAccount = relationship("TwitterAccount", back_populates="tweets")
 
 class TwitterAccount(Base):
     """ Table for Twitter accounts """
     __tablename__ = "TwitterAccount"
-    twitterAccountId = Column(Integer, primary_key=True, autoincrement=True)
+    twitterAccountId = Column(String, primary_key=True)
     name = Column(String, nullable=False)
     atName = Column(String, nullable=False)
     person = relationship("Person", back_populates="twitterAccount", uselist=False)
@@ -100,9 +100,9 @@ class Person(Base):
     __tablename__ = "Person"
     personId = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
-    twitterAccountId = Column(Integer, ForeignKey("TwitterAccount.twitterAccountId"))
+    twitterAccountId = Column(String, ForeignKey("TwitterAccount.twitterAccountId"))
     twitterAccount = relationship("TwitterAccount", back_populates="person", uselist=False)
-    linkedInAccountId = Column(Integer, ForeignKey("LinkedInAccount.linkedInAccountId"))
+    linkedInAccountId = Column(String, ForeignKey("LinkedInAccount.linkedInAccountId"))
     linkedInAccount = relationship("LinkedInAccount", back_populates="person", uselist=False)
-    xingAccountId = Column(Integer, ForeignKey("XingAccount.xingAccountId"))
+    xingAccountId = Column(String, ForeignKey("XingAccount.xingAccountId"))
     xingAccount = relationship("XingAccount", back_populates="person", uselist=False)
