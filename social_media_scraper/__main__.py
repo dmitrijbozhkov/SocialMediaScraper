@@ -8,6 +8,6 @@ pl = platform.system()
 if pl == "Linux" or pl == "Darwin":
     root.geometry("400x280")
 else:
-    root.geometry("500x380")
+    root.geometry("460x360")
 app = Window(root)
 root.mainloop()
