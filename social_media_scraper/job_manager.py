@@ -15,15 +15,10 @@ from social_media_scraper.login import social_media_logins, set_login_data
 from social_media_scraper.twitter.compose import process_twitter
 from social_media_scraper.linked_in.compose import process_linked_in
 from social_media_scraper.xing.compose import process_xing
-from social_media_scraper.person import store_person_record, log_person
+from social_media_scraper.person import store_person_record
 from social_media_scraper.commons import run_concurrently, throttle_filtered
-from social_media_scraper.logging import (PersonObserver,
-                                          SocialMediaObserver,
-                                          JobObserver,
-                                          LOG_PERSON_MESSAGE_TEMPLATE,
-                                          LOG_TWITTER_MESSAGE_TEMPLATE,
-                                          LOG_LINKED_IN_MESSAGE_TEMPLATE,
-                                          LOG_XING_MESSAGE_TEMPLATE)
+from social_media_scraper.logging import (SocialMediaObserver,
+                                          JobObserver)
 
 DatabaseDrivers = namedtuple("DatabaseDrivers", ["engine", "scoped_factory"])
 
@@ -43,16 +38,23 @@ class JobManager(object):
 
     def begin_scraping(self):
         """ Starts job """
-        self._connectable.connect()
+        try:
+            self._connectable.connect()
+        except AttributeError:
+            print("Annoying error, that might occur randomly until rxpy 3 is released, ignore it for now")
+            return self
         return self
 
     def _dispose(self):
         """ Disposes external resources """
         self._file.close()
         self._database.engine.dispose()
-        self._browsers.twitter.close()
-        self._browsers.linkedIn.close()
-        self._browsers.xing.close()
+        try:
+            self._browsers.twitter.close()
+            self._browsers.linkedIn.close()
+            self._browsers.xing.close()
+        except Exception:
+            pass
 
     def stop_scraping(self):
         """ Stops job """
@@ -94,7 +96,6 @@ class StreamManager(object):
             .zip(person, twitter_logs, linked_in_logs, xing_logs, lambda a, b, c, d: a) \
             .ignore_elements()
         self._datastreams = {
-            "person": log_person(person),
             "twitter": twitter_logs,
             "linkedIn": linked_in_logs,
             "xing": xing_logs,
@@ -112,13 +113,11 @@ class StreamManager(object):
 
     def init_job(self, log_window) -> JobManager:
         """ Initializes subscribers for prepared datastreams and returns JobManager """
-        person_sub = PersonObserver(log_window, LOG_PERSON_MESSAGE_TEMPLATE)
-        twitter_sub = SocialMediaObserver(log_window, LOG_TWITTER_MESSAGE_TEMPLATE, self._browsers.twitter)
-        linked_in_sub = SocialMediaObserver(log_window, LOG_LINKED_IN_MESSAGE_TEMPLATE, self._browsers.linkedIn)
-        xing_sub = SocialMediaObserver(log_window, LOG_XING_MESSAGE_TEMPLATE, self._browsers.xing)
+        twitter_sub = SocialMediaObserver(log_window, self._browsers.twitter)
+        linked_in_sub = SocialMediaObserver(log_window, self._browsers.linkedIn)
+        xing_sub = SocialMediaObserver(log_window, self._browsers.xing)
         job_sub = JobObserver(log_window, self._database.engine, self._file)
         job = {
-            "person": run_concurrently(self._datastreams["person"], person_sub, self._schedulers.tkinter, self._schedulers.pool),
             "twitter": run_concurrently(self._datastreams["twitter"], twitter_sub, self._schedulers.tkinter, self._schedulers.pool),
             "linkedIn": run_concurrently(self._datastreams["linkedIn"], linked_in_sub, self._schedulers.tkinter, self._schedulers.pool),
             "xing": run_concurrently(self._datastreams["xing"], xing_sub, self._schedulers.tkinter, self._schedulers.pool),

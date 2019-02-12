@@ -5,6 +5,18 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
+class XingEducation(Base):
+    __tablename__ = "XingEducation"
+    xingEducationId = Column(Integer, primary_key=True, autoincrement=True)
+    degree = Column(String)
+    schoolName = Column(String)
+    subject = Column(String)
+    schoolNotes = Column(String)
+    startDate = Column(DateTime)
+    endDate = Column(DateTime)
+    xingAccountId = Column(String, ForeignKey("XingAccount.xingAccountId"))
+    xingAccount = relationship("XingAccount", back_populates="xingEducations")
+
 class XingWorkExperience(Base):
     __tablename__ = "XingWorkExperience"
     xingWorkExperienceId = Column(Integer, primary_key=True, autoincrement=True)
@@ -25,6 +37,7 @@ class XingAccount(Base):
     haves = Column(String)
     wants = Column(String)
     person = relationship("Person", back_populates="xingAccount", uselist=False)
+    xingEducations = relationship("XingEducation", back_populates="xingAccount")
     xingWorkExperiences = relationship("XingWorkExperience", back_populates="xingAccount")
 
 class LinkedInEducation(Base):

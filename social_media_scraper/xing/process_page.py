@@ -6,7 +6,7 @@ from collections import namedtuple
 from selenium import webdriver
 from lxml.html import fromstring
 from social_media_scraper.commons import to_xpath, scroll_bottom, collect_element
-from social_media_scraper.model import XingAccount, XingWorkExperience
+from social_media_scraper.model import XingAccount, XingWorkExperience, XingEducation
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -18,6 +18,7 @@ NAME = to_xpath("h2[data-qa='malt-profile-display-name'] > span")
 CURRENT_POSITION = to_xpath("div[data-qa='profile-occupations'] p")
 LOCATION = to_xpath("div[data-qa='profile-location'] p")
 WORK_EXPERIENCE = to_xpath("input#work-experience-data")
+EDUCATION = to_xpath("input#education-data")
 HAVES = to_xpath("#haves li")
 WANTS = to_xpath("#wants li")
 # Xing page selector
@@ -89,7 +90,7 @@ def get_date_range(experience: dict):
     return (begin, end)
 
 def compose_experience(experience: dict):
-    """ Composes XingWorkExperience from dictionary """
+    """ Composes XingWorkExperience from input dictionary """
     date_range = get_date_range(experience)
     return XingWorkExperience(
         position=experience.get("job_title"),
@@ -103,12 +104,30 @@ def collect_work_experience(inner_element):
     experinece_data = json.loads(work_element.get("value"))
     return list(map(compose_experience, experinece_data))
 
+def compose_education(education: dict):
+    """ Compose XingEducation from input dictionary """
+    date_range = get_date_range(education)
+    return XingEducation(
+        degree=education.get("degree"),
+        schoolName=education.get("school_name"),
+        subject=education.get("subject"),
+        schoolNotes=education.get("school_notes"),
+        startDate=date_range[0],
+        endDate=date_range[1])
+
+def collect_education(inner_element):
+    """ Collects education fom page """
+    education_element = inner_element.xpath(EDUCATION)[0]
+    education_data = json.loads(education_element.get("value"))
+    return list(map(compose_education, education_data))
+
 def collect_xing(data: dict):
     """ Gathers data rom LinkedIn page """
     outer_page = data["xing"].outer
     inner_page = data["xing"].inner
     tags = collect_tags(inner_page)
     work_experience = collect_work_experience(inner_page)
+    education = collect_education(inner_page)
     data["xing"] = XingAccount(
         xingAccountId=data["xing"].link,
         name=collect_element(outer_page, NAME),
@@ -116,5 +135,6 @@ def collect_xing(data: dict):
         locaton=collect_element(outer_page, LOCATION),
         haves=tags[0],
         wants=tags[1],
-        xingWorkExperiences=work_experience)
+        xingWorkExperiences=work_experience,
+        xingEducations=education)
     return data
