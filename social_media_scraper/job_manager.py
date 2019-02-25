@@ -1,5 +1,6 @@
 """ Job manager functionality """
 from collections import namedtuple
+from typing import Dict
 import csv
 from tkinter import Tk
 import multiprocessing
@@ -12,54 +13,50 @@ from selenium.webdriver.firefox.options import Options
 from selenium import webdriver
 from social_media_scraper.model import Base
 from social_media_scraper.login import social_media_logins, set_login_data
-from social_media_scraper.twitter.compose import process_twitter
-from social_media_scraper.linked_in.compose import process_linked_in
-from social_media_scraper.xing.compose import process_xing
-from social_media_scraper.person import store_person_record
-from social_media_scraper.commons import run_concurrently, throttle_filtered
-from social_media_scraper.logging import (SocialMediaObserver,
-                                          JobObserver)
+from social_media_scraper.commons import run_concurrently
+from social_media_scraper.compose import ScrapingJobComposer, JobSchedulers
+from social_media_scraper.linked_in.process_page import setup_linked_in, collect_linked_in
+from social_media_scraper.twitter.process_page import setup_twitter, collect_twitter
+from social_media_scraper.xing.process_page import setup_xing, collect_xing
+from social_media_scraper.linked_in.log import log_linked_in
+from social_media_scraper.twitter.log import log_twitter
+from social_media_scraper.xing.log import log_xing
+from social_media_scraper.logging import JobObserver
 
 DatabaseDrivers = namedtuple("DatabaseDrivers", ["engine", "scoped_factory"])
 
 BrowserDrivers = namedtuple("BrowserDrivers", ["twitter", "linkedIn", "xing"])
 
-JobSchedulers = namedtuple("JobSchedulers", ["tkinter", "pool"])
-
 class JobManager(object):
     """ Manages running job """
 
-    def __init__(self, file, database, browsers, job, connectable):
+    def __init__(self, file, database, streams, jobstream, connectable):
         self._file = file
         self._database = database
-        self._browsers = browsers
-        self._job = job
+        self._streams = streams
+        self._jobstream = jobstream
         self._connectable = connectable
 
     def begin_scraping(self):
         """ Starts job """
         try:
             self._connectable.connect()
+            return self
         except AttributeError:
             print("Annoying error, that might occur randomly until rxpy 3 is released, ignore it for now")
             return self
-        return self
 
     def _dispose(self):
         """ Disposes external resources """
         self._file.close()
+        self._database.scoped_factory.close()
         self._database.engine.dispose()
-        try:
-            self._browsers.twitter.close()
-            self._browsers.linkedIn.close()
-            self._browsers.xing.close()
-        except Exception:
-            pass
 
     def stop_scraping(self):
         """ Stops job """
-        for job in self._job.keys():
-            self._job[job].dispose()
+        for job in self._streams.keys():
+            self._streams[job].stop_stream()
+        self._jobstream.dispose()
         self._dispose()
 
 class StreamManager(object):
@@ -68,7 +65,7 @@ class StreamManager(object):
     def __init__(self, database: DatabaseDrivers, browsers: BrowserDrivers):
         self._database: DatabaseDrivers = database
         self._browsers: BrowserDrivers = browsers
-        self._datastreams: dict = {}
+        self._datastreams: Dict[str, ScrapingJobComposer] = {}
         self._connectable = None
         self._file = None
         self._schedulers: JobSchedulers = None
@@ -76,31 +73,7 @@ class StreamManager(object):
     def process_person(self, filename: str):
         """ Prepares input file for reading """
         self._file = open(filename, "r")
-        self._connectable = Observable.defer(lambda: Observable.from_(csv.reader(self._file))) \
-            .skip(1) \
-            .map(lambda r: {"person": r[0], "twitter": r[1], "linkedIn": r[2], "xing": r[3]}) \
-            .flat_map(lambda r: Observable.just(store_person_record(self._database.scoped_factory, r))) \
-            .publish()
-        return self
-
-    def compose_streams(self, left, right):
-        """ Composes datastreams """
-        person = self._connectable.ref_count()
-        twitter_stream = throttle_filtered(person, "twitter", left, right)
-        linked_in_stream = throttle_filtered(person, "linkedIn", left, right)
-        xing_stream = throttle_filtered(person, "xing", left, right)
-        twitter_logs = process_twitter(twitter_stream, self._browsers.twitter, self._database.scoped_factory)
-        linked_in_logs = process_linked_in(linked_in_stream, self._browsers.linkedIn, self._database.scoped_factory)
-        xing_logs = process_xing(xing_stream, self._browsers.xing, self._database.scoped_factory)
-        job_stream = Observable \
-            .zip(person, twitter_logs, linked_in_logs, xing_logs, lambda a, b, c, d: a) \
-            .ignore_elements()
-        self._datastreams = {
-            "twitter": twitter_logs,
-            "linkedIn": linked_in_logs,
-            "xing": xing_logs,
-            "job": job_stream
-        }
+        self._connectable = ScrapingJobComposer.read_people(self._database.scoped_factory, self._file)
         return self
 
     def init_schedulers(self, master: Tk):
@@ -111,19 +84,51 @@ class StreamManager(object):
         self._schedulers = JobSchedulers(tkinter_scheduler, pool_scheduler)
         return self
 
+    def compose_streams(self, left, right):
+        """ Composes datastreams """
+        person = self._connectable.ref_count()
+        twitter_job = ScrapingJobComposer(
+            self._browsers.twitter,
+            self._database.scoped_factory,
+            self._schedulers) \
+            .set_input(person, "twitter") \
+            .get_records(left, right) \
+            .process_records(setup_twitter, collect_twitter, log_twitter)
+        linked_in_job = ScrapingJobComposer(
+            self._browsers.linkedIn,
+            self._database.scoped_factory,
+            self._schedulers) \
+            .set_input(person, "linkedIn") \
+            .get_records(left, right) \
+            .process_records(setup_linked_in, collect_linked_in, log_linked_in)
+        xing_job = ScrapingJobComposer(
+            self._browsers.xing,
+            self._database.scoped_factory,
+            self._schedulers) \
+            .set_input(person, "xing") \
+            .get_records(left, right) \
+            .process_records(setup_xing, collect_xing, log_xing)
+        job_stream = Observable \
+            .zip(person, twitter_job.stream, linked_in_job.stream, xing_job.stream, lambda a, b, c, d: a) \
+            .ignore_elements()
+        self._datastreams = {
+            "twitter": twitter_job,
+            "linkedIn": linked_in_job,
+            "xing": xing_job,
+            "job": job_stream
+        }
+        return self
+
     def init_job(self, log_window) -> JobManager:
         """ Initializes subscribers for prepared datastreams and returns JobManager """
-        twitter_sub = SocialMediaObserver(log_window, self._browsers.twitter)
-        linked_in_sub = SocialMediaObserver(log_window, self._browsers.linkedIn)
-        xing_sub = SocialMediaObserver(log_window, self._browsers.xing)
-        job_sub = JobObserver(log_window, self._database.engine, self._file)
-        job = {
-            "twitter": run_concurrently(self._datastreams["twitter"], twitter_sub, self._schedulers.tkinter, self._schedulers.pool),
-            "linkedIn": run_concurrently(self._datastreams["linkedIn"], linked_in_sub, self._schedulers.tkinter, self._schedulers.pool),
-            "xing": run_concurrently(self._datastreams["xing"], xing_sub, self._schedulers.tkinter, self._schedulers.pool),
-            "job": run_concurrently(self._datastreams["job"], job_sub, self._schedulers.tkinter, self._schedulers.pool)
+        job_sub = JobObserver(log_window, self._database, self._file)
+        job = run_concurrently(self._datastreams["job"], job_sub, self._schedulers.tkinter, self._schedulers.pool)
+        streams = {
+            "twitter": self._datastreams["twitter"].subscribe_log(log_window),
+            "linkedIn": self._datastreams["linkedIn"].subscribe_log(log_window),
+            "xing": self._datastreams["xing"].subscribe_log(log_window)
         }
-        return JobManager(self._file, self._database, self._browsers, job, self._connectable)
+        return JobManager(self._file, self._database, streams, job, self._connectable)
 
 class BrowserManager(object):
     """ Manages initializing browser """

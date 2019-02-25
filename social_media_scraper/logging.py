@@ -5,15 +5,6 @@ from rx import Observer, Observable
 
 PersonLog = namedtuple("PersonLog", ["name", "person_id"])
 
-TwitterLog = namedtuple("TwitterLog", ["name", "atName", "amountTweets"])
-
-LinkedInLog = namedtuple("LinkedInLog", ["name", "position"])
-
-XingLog = namedtuple("XingLog", ["name", "position"])
-
-LOG_TWITTER_MESSAGE_TEMPLATE = "Twitter account @{} stored by name {} with {} subscribers"
-LOG_LINKED_IN_MESSAGE_TEMPLATE = "LinkedIn account of {} stored, currently occupying position: {}"
-LOG_XING_MESSAGE_TEMPLATE = "Xing account of {} stored, currently occupying position: {}"
 JOB_COMPLETE_MESSAGE = "Scraping job is done!"
 
 EXCEPTION_TEMPLATE = "Error occured: " 
@@ -56,7 +47,8 @@ class JobObserver(Observer):
         """ Write complete message """
         write_window(self.log_window, JOB_COMPLETE_MESSAGE)
         self.file.close()
-        self.database.dispose()
+        self.database.scoped_factory.close()
+        self.database.engine.dispose()
 
 def log_events(stream: Observable, emit_template: str):
     """ Applies log iterable to template """
