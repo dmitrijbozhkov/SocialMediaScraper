@@ -11,6 +11,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from selenium.webdriver.firefox.options import Options
 from selenium import webdriver
+from selenium.common.exceptions import WebDriverException
 from social_media_scraper.model import Base
 from social_media_scraper.login import social_media_logins, set_login_data
 from social_media_scraper.commons import run_concurrently
@@ -21,7 +22,7 @@ from social_media_scraper.xing.process_page import setup_xing, collect_xing
 from social_media_scraper.linked_in.log import log_linked_in
 from social_media_scraper.twitter.log import log_twitter
 from social_media_scraper.xing.log import log_xing
-from social_media_scraper.logging import JobObserver
+from social_media_scraper.logging_window import JobObserver
 
 DatabaseDrivers = namedtuple("DatabaseDrivers", ["engine", "scoped_factory"])
 
@@ -137,18 +138,22 @@ class BrowserManager(object):
         self._database: DatabaseDrivers = database
         self._browsers: BrowserDrivers = None
 
-    def init_drivers(self, is_visible: bool) -> StreamManager:
+    def init_drivers(self, is_visible: bool, driver_path: str) -> StreamManager:
         """ Initializes scraper browser drivers """
-        logins = social_media_logins()
+        driver_path = driver_path if driver_path else "geckodriver"
+        logins = social_media_logins(driver_path)
         driver_options = Options()
         profile = webdriver.FirefoxProfile()
         profile.set_preference("intl.accept_languages", "en-us")
         profile.update_preferences()
         driver_options.headless = not is_visible
-        self._browsers = BrowserDrivers(
-            webdriver.Firefox(options=driver_options, firefox_profile=profile),
-            webdriver.Firefox(options=driver_options, firefox_profile=profile),
-            webdriver.Firefox(options=driver_options, firefox_profile=profile))
+        try:
+            self._browsers = BrowserDrivers(
+            webdriver.Firefox(options=driver_options, firefox_profile=profile, executable_path=driver_path),
+            webdriver.Firefox(options=driver_options, firefox_profile=profile, executable_path=driver_path),
+            webdriver.Firefox(options=driver_options, firefox_profile=profile, executable_path=driver_path))
+        except WebDriverException as ex:
+            raise RuntimeError("Seems like wrong geckodriver executable path, error message " + str(ex))
         set_login_data(self._browsers.linkedIn, logins[0])
         set_login_data(self._browsers.xing, logins[1])
         return StreamManager(self._database, self._browsers)

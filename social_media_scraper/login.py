@@ -6,6 +6,7 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import WebDriverException
 
 LoginData = namedtuple("LoginData", ["cookies", "localstorage", "link"])
 
@@ -35,9 +36,12 @@ def set_localstorage(driver: webdriver.Firefox, storage_items: Dict[str, str]):
                               key,
                               storage_items[key])
 
-def social_media_logins(options=Options()) -> Tuple[LoginData, LoginData]:
+def social_media_logins(driver_path: str, options=Options()) -> Tuple[LoginData, LoginData]:
     """ Logs into LinkedIn account with provided credentials """
-    login_driver = webdriver.Firefox(options=options)
+    try:
+        login_driver = webdriver.Firefox(options=options, executable_path=driver_path)
+    except WebDriverException as ex:
+        raise RuntimeError("Seems like wrong geckodriver executable path, error message " + str(ex))
     linked_in = login(login_driver, LINKED_IN_SUCCESS_ELEMENT, LINKED_IN_LOGIN_PAGE, LINKED_IN_404_PAGE)
     xing = login(login_driver, XING_SUCCESS_ELEMENT, XING_LOGIN_PAGE, XING_404_PAGE)
     login_driver.close()

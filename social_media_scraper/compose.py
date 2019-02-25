@@ -1,14 +1,39 @@
 """ Class for composing scraping job observable """
 import csv
+import logging
 from collections import namedtuple
 from rx import Observable
 from selenium.webdriver import Firefox
+from selenium.common.exceptions import WebDriverException
 from sqlalchemy.orm import scoped_session
 from social_media_scraper.commons import run_concurrently, throttle_filtered
-from social_media_scraper.logging import SocialMediaObserver
+from social_media_scraper.logging_window import SocialMediaObserver
 from social_media_scraper.store_records import store_person_record, store_info_record
 
 JobSchedulers = namedtuple("JobSchedulers", ["tkinter", "pool"])
+
+# Emission messages
+READ_EMISSION = "Read emission:"
+PERSON_EMISSION = "Person storing emission:"
+SETUP_EMISSION = "Setup emission:"
+COLLECT_EMISSION = "Collect emission:"
+STORE_EMISSION = "Store emission:"
+LOG_EMISSION = "Log emission:"
+# Error messages
+READ_ERROR = "Read error:"
+PERSON_ERROR = "Person error:"
+SETUP_ERROR = "Setup error:"
+COLLECT_ERROR = "Collect error:"
+STORE_ERROR = "Store error:"
+LOG_ERROR = "Log error:"
+
+def log_next(message: str):
+    """ Logs next observable emission """
+    return lambda e: logging.info(message + " " + str(e))
+
+def log_error(message: str):
+    """ Logs error observable emission """
+    return lambda e: logging.error(message + " " + str(e))
 
 class ScrapingJobComposer(object):
     """ Composes scraping observable for website """
@@ -22,11 +47,13 @@ class ScrapingJobComposer(object):
 
     @staticmethod
     def read_people(session: scoped_session, file):
-        """ Initializes  """
+        """ Initializes csv streaming """
         return Observable.defer(lambda: Observable.from_(csv.reader(file))) \
             .skip(1) \
             .map(lambda r: {"person": r[0], "twitter": r[1], "linkedIn": r[2], "xing": r[3]}) \
+            .do_action(log_next(READ_EMISSION), log_error(READ_ERROR)) \
             .map(lambda r: store_person_record(session, r)) \
+            .do_action(log_next(PERSON_EMISSION), log_error(PERSON_ERROR)) \
             .publish()
 
     def set_input(self, input_stream: Observable, data_key: str):
@@ -44,9 +71,13 @@ class ScrapingJobComposer(object):
         """ Compose stream to process records with appropriate functions """
         self.stream = self.stream \
             .map(lambda r: setup(self.driver, r)) \
+            .do_action(log_next(SETUP_EMISSION), log_error(SETUP_ERROR)) \
             .map(collect) \
+            .do_action(log_next(COLLECT_EMISSION), log_error(COLLECT_ERROR)) \
             .map(lambda r: store_info_record(self.session, self.key, r)) \
+            .do_action(log_next(STORE_EMISSION), log_error(STORE_ERROR)) \
             .map(log_events) \
+            .do_action(log_next(LOG_EMISSION), log_error(LOG_ERROR)) \
             .share()
         return self
 
@@ -61,5 +92,5 @@ class ScrapingJobComposer(object):
         self.stream.dispose()
         try:
             self.driver.close()
-        except Exception:
-            print("Driver already closed!")
+        except WebDriverException:
+            logging.debug("Driver already closed")

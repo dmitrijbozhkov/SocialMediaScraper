@@ -3,8 +3,6 @@ from collections import namedtuple
 from tkinter import DISABLED, NORMAL, END
 from rx import Observer, Observable
 
-PersonLog = namedtuple("PersonLog", ["name", "person_id"])
-
 JOB_COMPLETE_MESSAGE = "Scraping job is done!"
 
 EXCEPTION_TEMPLATE = "Error occured: " 

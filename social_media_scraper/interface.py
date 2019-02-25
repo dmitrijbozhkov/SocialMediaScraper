@@ -5,7 +5,7 @@ from typing import List
 import tkinter.filedialog as filedialog
 from tkinter.scrolledtext import ScrolledText
 from social_media_scraper.job_manager import DatabaseManager
-from social_media_scraper.logging import write_window
+from social_media_scraper.logging_window import write_window
 
 INPUT_PLACEHOLDER = "Choose input file name..."
 OUTPUT_PLACEHOLDER = "Choose output directory..."
@@ -13,7 +13,7 @@ OUTPUT_PLACEHOLDER = "Choose output directory..."
 class Window(Frame):
     """ GUI class """
 
-    def __init__(self, master):
+    def __init__(self, master, driver_path):
         Frame.__init__(self, master)
         self.master = master
         self.pack(fill=BOTH, expand=True)
@@ -24,6 +24,7 @@ class Window(Frame):
         self.database = None
         self.driver = None
         self.file = None
+        self.driver_path = driver_path
         self.init_window()
 
     def init_window(self):
@@ -132,7 +133,7 @@ class Window(Frame):
             request_min = int(self.wait_min.get())
             request_max = int(self.wait_max.get())
             self.running_job = job.init_database(database_path) \
-                .init_drivers(self.show_browser.get()) \
+                .init_drivers(self.show_browser.get(), self.driver_path) \
                 .init_schedulers(self.master) \
                 .process_person(self.input_file_name) \
                 .compose_streams(request_min, request_max) \
