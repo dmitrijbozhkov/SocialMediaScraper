@@ -13,7 +13,7 @@ OUTPUT_PLACEHOLDER = "Choose output directory..."
 class Window(Frame):
     """ GUI class """
 
-    def __init__(self, master, driver_path):
+    def __init__(self, master, args):
         Frame.__init__(self, master)
         self.master = master
         self.pack(fill=BOTH, expand=True)
@@ -24,7 +24,7 @@ class Window(Frame):
         self.database = None
         self.driver = None
         self.file = None
-        self.driver_path = driver_path
+        self.args = args
         self.init_window()
 
     def init_window(self):
@@ -132,8 +132,8 @@ class Window(Frame):
             job = DatabaseManager()
             request_min = int(self.wait_min.get())
             request_max = int(self.wait_max.get())
-            self.running_job = job.init_database(database_path) \
-                .init_drivers(self.show_browser.get(), self.driver_path) \
+            self.running_job = job.init_database(database_path, self.args.sql) \
+                .init_drivers(self.show_browser.get(), self.args.geckodriver) \
                 .init_schedulers(self.master) \
                 .process_person(self.input_file_name) \
                 .compose_streams(request_min, request_max) \

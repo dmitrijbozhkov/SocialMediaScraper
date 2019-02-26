@@ -1,4 +1,4 @@
-""" Functions to store Person """
+""" Functions to store records """
 from sqlalchemy.orm import scoped_session
 from social_media_scraper.model import Person
 
@@ -9,6 +9,7 @@ def store_person_record(session_factory: scoped_session, data):
     session.add(person)
     session.commit()
     data["person"] = person.personId
+    session.flush()
     session.close()
     return data
 
@@ -21,5 +22,6 @@ def store_info_record(session_factory: scoped_session, account_data_key: str, da
     account.person = person
     snapshot = account.get_snapshot()
     session.commit()
+    session.flush()
     session.close()
     return snapshot

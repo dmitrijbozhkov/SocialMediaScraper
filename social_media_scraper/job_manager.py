@@ -164,9 +164,9 @@ class DatabaseManager(object):
     def __init__(self):
         self._database: DatabaseDrivers = None
 
-    def init_database(self, database_path: str) -> BrowserManager:
+    def init_database(self, database_path: str, echo=False) -> BrowserManager:
         """ Initializes sqlite database to write into """
-        engine = create_engine("sqlite:///" + database_path)
+        engine = create_engine("sqlite:///" + database_path, echo=echo)
         Base.metadata.create_all(engine)
         session_factory = sessionmaker(bind=engine)
         scoped_factory = scoped_session(session_factory)
