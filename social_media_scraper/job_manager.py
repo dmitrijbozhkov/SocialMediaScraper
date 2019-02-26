@@ -168,7 +168,7 @@ class DatabaseManager(object):
         """ Initializes sqlite database to write into """
         engine = create_engine("sqlite:///" + database_path, echo=echo)
         Base.metadata.create_all(engine)
-        session_factory = sessionmaker(bind=engine)
+        session_factory = sessionmaker(bind=engine, autoflush=False)
         scoped_factory = scoped_session(session_factory)
         self._database = DatabaseDrivers(engine, scoped_factory)
         return BrowserManager(self._database)
