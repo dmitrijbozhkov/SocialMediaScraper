@@ -111,7 +111,7 @@ class StreamManager(object):
             .get_records(left, right) \
             .process_records(setup_xing, collect_xing, log_xing)
         job_stream = Observable \
-            .zip(person, twitter_job.stream, linked_in_job.stream, xing_job.stream, lambda a, b, c, d: a) \
+            .zip(twitter_job.stream, linked_in_job.stream, xing_job.stream, lambda a, b, c: a) \
             .ignore_elements()
         self._datastreams = {
             "twitter": twitter_job,

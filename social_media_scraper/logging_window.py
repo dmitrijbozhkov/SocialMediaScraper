@@ -1,5 +1,5 @@
 """ Logging functionality """
-from collections import namedtuple
+import logging
 from tkinter import DISABLED, NORMAL, END
 from rx import Observer, Observable
 
@@ -35,6 +35,7 @@ class JobObserver(Observer):
 
     def on_next(self, value):
         """ Write log in window """
+        logging.info("NEXT!")
         write_window(self.log_window, value)
 
     def on_error(self, error):
@@ -43,6 +44,7 @@ class JobObserver(Observer):
 
     def on_completed(self):
         """ Write complete message """
+        logging.info("COMPLETED!")
         write_window(self.log_window, JOB_COMPLETE_MESSAGE)
         self.file.close()
         self.database.engine.dispose()

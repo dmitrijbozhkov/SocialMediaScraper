@@ -1,5 +1,6 @@
 """ Browser operations and LinkedIn page profile scraping """
 from typing import List
+import logging
 from collections import namedtuple
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
@@ -103,4 +104,6 @@ def collect_linked_in(data: dict):
         locaton=location,
         linkedInWorkExperiences=experiences,
         linkedInEducations=education_records)
+    logging.info("Collect linked in: " + str(experiences))
+    logging.info("Collect linked in: " + str(education_records))
     return data
