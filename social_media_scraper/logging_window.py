@@ -45,7 +45,6 @@ class JobObserver(Observer):
         """ Write complete message """
         write_window(self.log_window, JOB_COMPLETE_MESSAGE)
         self.file.close()
-        self.database.scoped_factory.close()
         self.database.engine.dispose()
 
 def log_events(stream: Observable, emit_template: str):

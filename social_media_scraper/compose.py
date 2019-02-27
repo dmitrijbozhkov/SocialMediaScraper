@@ -74,8 +74,6 @@ class ScrapingJobComposer(object):
             .do_action(log_next(SETUP_EMISSION), log_error(SETUP_ERROR)) \
             .map(collect) \
             .do_action(log_next(COLLECT_EMISSION), log_error(COLLECT_ERROR)) \
-            .observe_on(self.schedulers.tkinter) \
-            .subscribe_on(self.schedulers.pool) \
             .map(lambda r: store_info_record(self.session, self.key, r)) \
             .do_action(log_next(STORE_EMISSION), log_error(STORE_ERROR)) \
             .map(log_events) \
@@ -86,7 +84,7 @@ class ScrapingJobComposer(object):
     def subscribe_log(self, log_window):
         """ Subscribes to logging observer and sets scheduler """
         observer = SocialMediaObserver(log_window, self.driver)
-        self.stream = self.stream.subscribe(observer)
+        self.stream = run_concurrently(self.stream, observer, self.schedulers.tkinter, self.schedulers.pool)
         return self
 
     def stop_stream(self):

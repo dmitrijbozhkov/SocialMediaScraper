@@ -9,6 +9,7 @@ from rx.concurrency.mainloopscheduler import TkinterScheduler
 from rx.concurrency import ThreadPoolScheduler
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.pool import StaticPool
 from selenium.webdriver.firefox.options import Options
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
@@ -166,9 +167,12 @@ class DatabaseManager(object):
 
     def init_database(self, database_path: str, echo=False) -> BrowserManager:
         """ Initializes sqlite database to write into """
-        engine = create_engine("sqlite:///" + database_path, echo=echo)
+        engine = create_engine(
+            "sqlite:///" + database_path,
+            echo=echo,
+            poolclass=StaticPool,
+            connect_args={"check_same_thread": False})
         Base.metadata.create_all(engine)
         session_factory = sessionmaker(bind=engine, autoflush=False)
-        scoped_factory = scoped_session(session_factory)
-        self._database = DatabaseDrivers(engine, scoped_factory)
+        self._database = DatabaseDrivers(engine, session_factory)
         return BrowserManager(self._database)
