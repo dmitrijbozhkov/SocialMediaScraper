@@ -1,6 +1,7 @@
 """ Common code accross program """
 import re
 import random
+import logging
 from rx import Observable, Observer
 from cssselect import GenericTranslator
 from selenium import webdriver
@@ -49,10 +50,20 @@ def check_if_present(driver: webdriver.Firefox, selector: str):
     """ Checks if element is present on page by css selector """
     return bool(driver.find_elements_by_css_selector(selector))
 
-def collect_element(tree, selector, default=""):
+def collect_element(tree, selector: str, default=""):
     """ Selects first element from html tree by selector and returns its text_content(), or default if element not found """
     elements = tree.xpath(selector)
-    return elements[0].text_content() if elements else default
+    if not elements:
+        logging.info("Collecting isn't possible by selector: " + selector)
+        return default
+    return elements[0].text_content()
+
+def lookup_element(page, selector: str):
+    """ Log searching page by selector """
+    result = page.xpath(selector)
+    if not result:
+        logging.info("Select returned empty list by selector: " + selector)
+    return result
 
 def click_all(driver: webdriver.Firefox, selector: str):
     """ Executes javascript script, that will click all elements, found by css selector """

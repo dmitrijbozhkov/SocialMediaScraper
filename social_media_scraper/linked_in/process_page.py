@@ -1,6 +1,5 @@
 """ Browser operations and LinkedIn page profile scraping """
 from typing import List
-import logging
 from collections import namedtuple
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
@@ -13,7 +12,8 @@ from social_media_scraper.linked_in.page_elements import *
 from social_media_scraper.commons import (scroll_bottom,
                                           check_if_present,
                                           collect_element,
-                                          click_all)
+                                          click_all,
+                                          lookup_element)
 
 PageContent = namedtuple("PageContent", ["page", "link"])
 
@@ -40,7 +40,7 @@ def setup_linked_in(driver: webdriver.Firefox, data: dict):
     except NoSuchElementException:
         pass
     open_list(driver, COMPANY_TIMELINE_BUTTONS, MORE_LOCATOR, LESS_LOCATOR)
-    click_all(driver, EXPERIENCE_DESCRIPTION_MORE)
+    click_all(driver, BUTTON_MORE)
     WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, CONTENT)))
     html = driver.find_element_by_css_selector(CONTENT).get_attribute("innerHTML")
     data["linkedIn"] = PageContent(fromstring(html), data["linkedIn"])
@@ -64,8 +64,8 @@ def collect_timeline_experience(element, timeline) -> List[LinkedInWorkExperienc
 def collect_experience(page) -> List[LinkedInWorkExperience]:
     """ Parses work experience page elment and extracts data from it """
     experiences = []
-    for experience in page.xpath(EXPERIENCE_RECORD):
-        inner = experience.xpath(EXPERIENCE_INNER_TIMELINE)
+    for experience in lookup_element(page, EXPERIENCE_RECORD):
+        inner = lookup_element(experience, EXPERIENCE_INNER_TIMELINE)
         if inner:
             experiences.extend(collect_timeline_experience(experience, inner))
         else:
@@ -81,7 +81,7 @@ def collect_experience(page) -> List[LinkedInWorkExperience]:
 def collect_education(page):
     """ Parses persons education page element and extracts data from it """
     education_records = []
-    for education in page.xpath(EDUCATION_RECORD):
+    for education in lookup_element(page, EDUCATION_RECORD):
         education_records.append(LinkedInEducation(
             facilityName=collect_element(education, EDUCATION_FACILITY),
             degreeName=collect_element(education, EDUCATION_DEGREE),
@@ -104,6 +104,4 @@ def collect_linked_in(data: dict):
         locaton=location,
         linkedInWorkExperiences=experiences,
         linkedInEducations=education_records)
-    logging.info("Collect linked in: " + str(experiences))
-    logging.info("Collect linked in: " + str(education_records))
     return data

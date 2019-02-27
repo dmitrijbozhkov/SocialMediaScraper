@@ -1,5 +1,5 @@
 Rx==1.6.1
 selenium==3.141.0
 lxml==4.1.0
-SQLAlchemy==1.1.13
+SQLAlchemy==1.2.18
 cssselect==1.0.3

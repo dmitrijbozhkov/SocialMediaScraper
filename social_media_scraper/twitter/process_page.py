@@ -5,7 +5,7 @@ from selenium import webdriver
 from lxml.html import fromstring
 from lxml import etree as tr
 from social_media_scraper.twitter.page_elements import *
-from social_media_scraper.commons import scroll_bottom, check_if_present, collect_element
+from social_media_scraper.commons import scroll_bottom, check_if_present, collect_element, lookup_element
 from social_media_scraper.model import (Tweet,
                                         TwitterAccount,
                                         TwitterAccountDetails)
@@ -19,11 +19,11 @@ def scroll_untill_end(driver: webdriver.Chrome):
 
 def check_if_retweet(tweet: tr.Element) -> bool:
     """ Checks if tweet is original """
-    return bool(tweet.xpath(TWEET_IS_RETWEET))
+    return bool(lookup_element(tweet, TWEET_IS_RETWEET))
 
 def get_tweet_datetime(tweet: tr.Element):
     """ Get tweet timestamp and parse it into datetime object """
-    time_element = tweet.xpath(TWEET_TIMESTAMP)[0]
+    time_element = lookup_element(tweet, TWEET_TIMESTAMP)[0]
     time_value = time_element.get("data-time-ms")
     timestamp = int(time_value) / 1000
     return dt.fromtimestamp(timestamp)
@@ -51,7 +51,7 @@ def setup_twitter(driver: webdriver.Chrome, data: dict) -> TwitterAccount:
 def collect_tweets(page):
     """ Collects tweet data """
     tweets = []
-    for tweet in page.xpath(TWEETS):
+    for tweet in lookup_element(page, TWEETS):
         datetime_posted = get_tweet_datetime(tweet)
         is_original = check_if_retweet(tweet)
         comments_amount = parse_stat_numbers(collect_element(tweet, TWEET_AMOUNT_COMMENTS))

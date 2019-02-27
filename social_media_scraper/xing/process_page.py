@@ -8,7 +8,7 @@ from selenium import webdriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
-from social_media_scraper.commons import scroll_bottom, collect_element
+from social_media_scraper.commons import scroll_bottom, collect_element, lookup_element
 from social_media_scraper.model import XingAccount, XingWorkExperience, XingEducation
 from social_media_scraper.xing.page_elements import *
 
@@ -41,8 +41,8 @@ def compose_list(acc, text):
 
 def collect_tags(inner_element):
     """ Collects data from haves and wants lists """
-    haves = map(get_content, inner_element.xpath(HAVES))
-    wants = map(get_content, inner_element.xpath(WANTS))
+    haves = map(get_content, lookup_element(inner_element, HAVES))
+    wants = map(get_content, lookup_element(inner_element, WANTS))
     return (
         reduce(compose_list, haves, ""),
         reduce(compose_list, wants, ""))
@@ -78,7 +78,7 @@ def compose_experience(experience: dict):
 
 def collect_work_experience(inner_element):
     """ Collects work experience from page """
-    work_element = inner_element.xpath(WORK_EXPERIENCE)[0]
+    work_element = lookup_element(inner_element, WORK_EXPERIENCE)[0]
     experinece_data = json.loads(work_element.get("value"))
     return list(map(compose_experience, experinece_data))
 
@@ -95,7 +95,7 @@ def compose_education(education: dict):
 
 def collect_education(inner_element):
     """ Collects education fom page """
-    education_element = inner_element.xpath(EDUCATION)[0]
+    education_element = lookup_element(inner_element, EDUCATION)[0]
     education_data = json.loads(education_element.get("value"))
     return list(map(compose_education, education_data))
 
