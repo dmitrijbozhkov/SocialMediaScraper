@@ -34,6 +34,10 @@ def parse_stat_numbers(number: str):
         return 0
     if number[-1] == "K":
         return int(float(number[0:-1]) * 1000)
+    if number[-1] == "M":
+        return int(float(number[0:-1]) * 1000)
+    if "," in number:
+        return int(float(number.replace(",", ".")) * 1000)
     return int(number)
 
 def prepare_english_link(link: str):
