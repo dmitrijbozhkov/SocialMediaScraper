@@ -142,11 +142,11 @@ class BrowserManager(object):
     def init_drivers(self, is_visible: bool, driver_path: str) -> StreamManager:
         """ Initializes scraper browser drivers """
         driver_path = driver_path if driver_path else "geckodriver"
-        logins = social_media_logins(driver_path)
-        driver_options = Options()
         profile = webdriver.FirefoxProfile()
-        profile.set_preference("intl.accept_languages", "en-us")
+        profile.set_preference("intl.accept_languages", "en-US,en;q=0.5")
         profile.update_preferences()
+        logins = social_media_logins(driver_path, profile)
+        driver_options = Options()
         driver_options.headless = not is_visible
         try:
             self._browsers = BrowserDrivers(

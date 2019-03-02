@@ -46,6 +46,10 @@ def scroll_bottom(driver: webdriver.Firefox):
     """ Scrolls to the end of the page """
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
+def scroll_middle(driver: webdriver.Firefox):
+    """ Scrols to the middle of the page """
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight / 2);")
+
 def check_if_present(driver: webdriver.Firefox, selector: str):
     """ Checks if element is present on page by css selector """
     return bool(driver.find_elements_by_css_selector(selector))

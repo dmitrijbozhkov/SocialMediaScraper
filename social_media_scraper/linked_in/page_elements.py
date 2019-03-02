@@ -25,6 +25,8 @@ EDUCATION_SPECIALTY = to_xpath(".pv-entity__degree-info .pv-entity__fos span:nth
 EDUCATION_DEGREE = to_xpath(".pv-entity__degree-info .pv-entity__degree-name span:nth-child(2)")
 EDUCATION_DATERANGE = to_xpath(".pv-entity__dates span:nth-child(2)")
 # Selectors for preparation
+EDUCATION_ELEMENT = "#education-section"
+EXPERIENCE_ELEMENT = "#experience-section"
 MORE_LOCATOR = ".pv-profile-section__see-more-inline"
 LESS_LOCATOR = ".pv-profile-section__see-less-inline"
 EXPERIENCE_SECTION = ".pv-experience-section__see-more"

@@ -13,7 +13,8 @@ from social_media_scraper.commons import (scroll_bottom,
                                           check_if_present,
                                           collect_element,
                                           click_all,
-                                          lookup_element)
+                                          lookup_element,
+                                          scroll_middle)
 
 PageContent = namedtuple("PageContent", ["page", "link"])
 
@@ -31,6 +32,10 @@ def setup_linked_in(driver: webdriver.Firefox, data: dict):
     """ Sets up LinkedIn page to be scraped """
     driver.get(data["linkedIn"])
     scroll_bottom(driver)
+    scroll_middle(driver)
+    WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, CONTENT)))
+    WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, EXPERIENCE_ELEMENT)))
+    WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, EDUCATION_ELEMENT)))
     try:
         open_list(driver, EXPERIENCE_SECTION, MORE_LOCATOR, LESS_LOCATOR)
     except NoSuchElementException:
@@ -41,7 +46,6 @@ def setup_linked_in(driver: webdriver.Firefox, data: dict):
         pass
     open_list(driver, COMPANY_TIMELINE_BUTTONS, MORE_LOCATOR, LESS_LOCATOR)
     click_all(driver, BUTTON_MORE)
-    WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, CONTENT)))
     html = driver.find_element_by_css_selector(CONTENT).get_attribute("innerHTML")
     data["linkedIn"] = PageContent(fromstring(html), data["linkedIn"])
     return data

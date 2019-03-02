@@ -36,10 +36,10 @@ def set_localstorage(driver: webdriver.Firefox, storage_items: Dict[str, str]):
                               key,
                               storage_items[key])
 
-def social_media_logins(driver_path: str, options=Options()) -> Tuple[LoginData, LoginData]:
+def social_media_logins(driver_path: str, profile, options=Options()) -> Tuple[LoginData, LoginData]:
     """ Logs into LinkedIn account with provided credentials """
     try:
-        login_driver = webdriver.Firefox(options=options, executable_path=driver_path)
+        login_driver = webdriver.Firefox(options=options, firefox_profile=profile, executable_path=driver_path)
     except WebDriverException as ex:
         raise RuntimeError("Seems like wrong geckodriver executable path, error message " + str(ex))
     linked_in = login(login_driver, LINKED_IN_SUCCESS_ELEMENT, LINKED_IN_LOGIN_PAGE, LINKED_IN_404_PAGE)
