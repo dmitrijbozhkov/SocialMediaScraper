@@ -32,6 +32,7 @@ def setup_linked_in(driver: webdriver.Firefox, data: dict):
     """ Sets up LinkedIn page to be scraped """
     driver.get(data["linkedIn"])
     scroll_bottom(driver)
+    driver.implicitly_wait(0.5)
     scroll_middle(driver)
     WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, CONTENT)))
     WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, EXPERIENCE_ELEMENT)))
