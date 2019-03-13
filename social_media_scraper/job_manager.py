@@ -1,14 +1,13 @@
 """ Job manager functionality """
 from collections import namedtuple
 from typing import Dict
-import csv
 from tkinter import Tk
 import multiprocessing
 from rx import Observable
 from rx.concurrency.mainloopscheduler import TkinterScheduler
 from rx.concurrency import ThreadPoolScheduler
 from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from selenium.webdriver.firefox.options import Options
 from selenium import webdriver
