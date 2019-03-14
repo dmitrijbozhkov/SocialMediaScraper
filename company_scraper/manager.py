@@ -3,7 +3,6 @@ import asyncio
 import uvloop
 from typing import List
 from collections import namedtuple
-from company_scraper.google_news.constants import USER_AGENT, ACCEPT_LANGUAGE
 
 ScraperSettings = namedtuple("ScraperSettings", ["scraper", "input_file", "output_file"])
 
@@ -13,7 +12,7 @@ def init_scrapers(language: str, scrapers: List[ScraperSettings]):
     uvloop.install()
     loop = asyncio.get_event_loop()
     for scraper, input_file, output_file in scrapers:
-        temp_scraper = scraper.create_scraper(USER_AGENT, ACCEPT_LANGUAGE)
+        temp_scraper = scraper.create_scraper()
         temp_scraper.set_language(language)
         temp_scraper.set_input(input_file)
         temp_scraper.set_output(output_file)

@@ -1,9 +1,10 @@
 """ Scraper implementation """
 import asyncio
 import base64
+import string
 import os.path as path
-from aiohttp import ClientSession
-from aiohttp.client_exceptions import InvalidURL
+from aiohttp import ClientSession, ClientTimeout
+from aiohttp.client_exceptions import InvalidURL, ClientConnectionError
 from yarl import URL
 from lxml.html import fromstring
 import newspaper
@@ -12,7 +13,8 @@ from company_scraper.google_news.constants import (
     GOOGLE_NEWS_URL,
     GOOGLE_NEWS_DE_SEARCH,
     GOOGLE_NEWS_EN_SEARCH,
-    ARTICLE_LINK
+    ARTICLE_LINK,
+    BROWSER_HEADERS
 )
 
 def _news_link(link: str):
@@ -31,23 +33,29 @@ def decode_base64(data):
         data += b"=" * (4 - missing_padding)
     return base64.urlsafe_b64decode(data)
 
-def remove_wrong_characters(link: str):
-    """ Remove non-ascii characters from link """
-    stripped = link.strip("\x01\x00")
-    stripped = stripped.strip("\x01v")
-    stripped = stripped.strip("\x01\x7f")
-    stripped = stripped.strip("\x01n")
-    return stripped
+def fix_html_link(link: str):
+    """ Fix wrong charcters on links, which end with .html """
+    try:
+        return link[:link.index(".ht")] + ".html"
+    except ValueError:
+        return link
+
+def get_first_link(links: str):
+    """ Get first link from base64 string """
+    index = 0
+    length = len(links)
+    while index < length:
+        if not links[index] in string.printable:
+            return links[:index]
+        index += 1
 
 def parse_link(link: str):
     """ Parse Google's bullshit """
     decoded = decode_base64(str(link).encode())
     parsed = decoded.decode("utf-8", "ignore")[4:]
     links = str(parsed)
-    try:
-        return remove_wrong_characters(links[:len(links.split("http")[1]) + 4])
-    except IndexError:
-        return remove_wrong_characters(links)
+    first_link = get_first_link(links)
+    return fix_html_link(first_link)
 
 class GoogleNewsScraper(Scraper):
     """ Scraper implementation for Google News """
@@ -83,19 +91,29 @@ class GoogleNewsScraper(Scraper):
         author_string = ";".join(authors)
         self._output_file.send([company, name, contents, author_string, date])
 
+    async def _read_response(self, response):
+        """ Read response by bytes and return string """
+        buffer = b""
+        async for data in response.content.iter_any():
+            buffer += data
+        return buffer.decode("utf-8", "ignore")
+
     async def _scrape_article(self, session, company: str, link: str, name: str):
         """ Scrapes company's articles """
         try:
             link = parse_link(link)
             async with session.get(URL(link, encoded=True)) as response:
-                page = await response.text()
+                if response.status > 300:
+                    raise RuntimeError("Bad response: " + str(response.status))
+                page = await self._read_response(response)
                 print("Getting resource: " + link + " with response: " + str(response.status))
-            article = newspaper.Article(link, language=self._language)
+            article = newspaper.Article(link)
             article.download(input_html=page)
+            article.set_meta_language(self._language)
             article.parse()
             self._store_article(company, name, article.text, article.authors, article.publish_date)
-        except InvalidURL as err:
-            print("Fail: " + repr(err))
+        except (InvalidURL, asyncio.TimeoutError, RuntimeError, ClientConnectionError) as err:
+            print("Url fail: " + repr(err) + " Url is: " + repr(link))
 
     async def _scrape_google_news(self, session, link: Record):
         """ Scrapes google news page """
@@ -124,7 +142,8 @@ class GoogleNewsScraper(Scraper):
             Record(r.name, GOOGLE_NEWS_URL + search_query.format(r.data))
             for r in self._input_file
         ]
-        async with ClientSession() as session:
+        timeout = ClientTimeout(total=60 * 2)
+        async with ClientSession(headers=BROWSER_HEADERS, timeout=timeout) as session:
             tasks = [
                 loop.create_task(self._scrape_google_news(session, r))
                 for r in queries

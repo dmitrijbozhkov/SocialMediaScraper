@@ -3,9 +3,9 @@ import os.path as path
 import asyncio
 from lxml.html import fromstring
 from aiohttp import ClientSession
-from aiohttp.client_exceptions import InvalidURL
+from aiohttp.client_exceptions import InvalidURL, ClientConnectionError
 from company_scraper.scraper_commons import Scraper, read_skip_empty, Record, csv_writer
-from company_scraper.kununu.constants import SCORE
+from company_scraper.kununu.constants import SCORE, BROWSER_HEADERS
 
 class KununuScraper(Scraper):
     """ Scraper abstract class implementation for Kununu website """
@@ -46,13 +46,13 @@ class KununuScraper(Scraper):
             score: str = html.xpath(SCORE)[0].text_content()
             score = float(score.replace(",", "."))
             self._output_file.send([record.name, score])
-        except InvalidURL as err:
-            print("Fail: " + repr(err))
+        except (InvalidURL, asyncio.TimeoutError, RuntimeError, ClientConnectionError) as err:
+            print("Url fail: " + repr(err) + " Url is: " + repr(record.data))
 
     async def _init_scraping(self):
         """ Set up scraping kununu """
         loop = asyncio.get_event_loop()
-        async with ClientSession() as session:
+        async with ClientSession(headers=BROWSER_HEADERS) as session:
             tasks = [
                 loop.create_task(self._scrape_kununu(session, r))
                 for r in self._input_file
