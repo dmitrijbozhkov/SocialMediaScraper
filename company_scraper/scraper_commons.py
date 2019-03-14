@@ -17,7 +17,7 @@ def read_skip_empty(file_name: str, column: int):
 def csv_writer(file_name: str):
     """ Writes list of rows into file """
     with open(file_name, "w") as file:
-        writer = csv.writer(file, delimiter=",")
+        writer = csv.writer(file, delimiter="|")
         while True:
             row = yield
             if not row:
