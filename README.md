@@ -22,7 +22,7 @@ Before starting application make sure, that all required packages are installed 
 __python -m company_scraper__ [-h] __-l__ LANGUAGE __-i__ INPUT __-ok__ OUTPUT_KUNUNU __-on__ OUTPUT_GOOGLE_NEWS
 
 #### Arguments:
-  __-h, --help__            
+  __-h, --help__
   Show help message and exit
 
   __-l LANGUAGE, --language LANGUAGE__
