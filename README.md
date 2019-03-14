@@ -19,17 +19,21 @@ Before starting application make sure, that all required packages are installed 
 
 ### Running application
 
-python -m company_scraper [-h] -l LANGUAGE -i INPUT -ok OUTPUT_KUNUNU -on OUTPUT_GOOGLE_NEWS
+__python -m company_scraper__ [-h] __-l__ LANGUAGE __-i__ INPUT __-ok__ OUTPUT_KUNUNU __-on__ OUTPUT_GOOGLE_NEWS
 
 #### Arguments:
   __-h, --help__            
   Show help message and exit
+
   __-l LANGUAGE, --language LANGUAGE__
   Set language for news articles ('en' or 'de')
+
   __-i INPUT, --input INPUT__
   Set input file for processing
+
   __-ok OUTPUT_KUNUNU, --output_kununu OUTPUT_KUNUNU__
   Output file for kununu
+
   __-on OUTPUT_GOOGLE_NEWS, --output_google_news OUTPUT_GOOGLE_NEWS__
   Output file for google news
 
