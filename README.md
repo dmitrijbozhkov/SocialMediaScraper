@@ -19,7 +19,7 @@ Before starting application make sure, that all required packages are installed 
 
 ### Running application
 
-__python -m company_scraper__ [-h] __-l__ LANGUAGE __-i__ INPUT __-ok__ OUTPUT_KUNUNU __-on__ OUTPUT_GOOGLE_NEWS
+__python -m company_scraper__ [-h] __-l__ LANGUAGE __-i__ INPUT __-o__ OUTPUT
 
 #### Arguments:
   __-h, --help__
@@ -31,12 +31,9 @@ __python -m company_scraper__ [-h] __-l__ LANGUAGE __-i__ INPUT __-ok__ OUTPUT_K
   __-i INPUT, --input INPUT__
   Set input file for processing
 
-  __-ok OUTPUT_KUNUNU, --output_kununu OUTPUT_KUNUNU__
-  Output file for kununu
-
-  __-on OUTPUT_GOOGLE_NEWS, --output_google_news OUTPUT_GOOGLE_NEWS__
-  Output file for google news
+  __-o OUTPUT, --output OUTPUT__
+  Output file for scraping results
 
 #### Example command:
 
-> python -m company_scraper -i "./example-company.csv" -ok "kununu.csv" -on "google.csv" -l "de"
+> python -m company_scraper -l "de" -i "example-company.csv" -o "data.db"
