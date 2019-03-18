@@ -8,7 +8,8 @@ from aiohttp.client_exceptions import InvalidURL, ClientConnectionError
 from yarl import URL
 from lxml.html import fromstring
 import newspaper
-from company_scraper.scraper_commons import Scraper, read_skip_empty, Record, csv_writer
+from company_scraper.scraper_commons import Scraper, read_skip_empty, Record, connect_database, ignore_integriy_save
+from company_scraper.model import NewsArticle, Company
 from company_scraper.google_news.constants import (
     GOOGLE_NEWS_URL,
     GOOGLE_NEWS_DE_SEARCH,
@@ -66,6 +67,8 @@ class GoogleNewsScraper(Scraper):
         self._language = None
         self._input_file = None
         self._output_file = None
+        self._engine = None
+        self._sessionmaker = None
 
     def set_language(self, language: str):
         """ Set language for scraping """
@@ -75,21 +78,31 @@ class GoogleNewsScraper(Scraper):
         """ Sets file with links from search queries """
         if not path.isfile(input_file):
             raise RuntimeError("Can't find file by path " + input_file)
-        self._input_file = read_skip_empty(input_file, 1)
+        self._input_file = input_file
 
     def set_output(self, output_file: str):
         """ Set sqlite file path """
-        if path.isfile(output_file):
-            raise RuntimeError("Output file already exists " + output_file)
-        writer = csv_writer(output_file)
-        next(writer)
-        writer.send(["Company", "Name", "Contents", "Authors", "Date"])
-        self._output_file = writer
+        if not path.isfile(output_file):
+            raise RuntimeError("Output file doesn't exist " + output_file)
+        self._output_file = output_file
 
-    def _store_article(self, company, name, contents, authors, date):
+    def _store_article(self, company, link, name, contents, authors, date):
         """ Stores article with SQLAlchemy """
         author_string = ";".join(authors)
-        self._output_file.send([company, name, contents, author_string, date])
+        article = NewsArticle(
+            newsArticleId=link,
+            name=name,
+            contents=contents,
+            authorString=author_string,
+            date=date,
+            companyId=company
+        )
+        ignore_integriy_save(self._sessionmaker(), article)
+
+    def _store_company(self, company):
+        """ Store company """
+        company = Company(companyId=company)
+        ignore_integriy_save(self._sessionmaker(), company)
 
     async def _read_response(self, response):
         """ Read response by bytes and return string """
@@ -111,13 +124,14 @@ class GoogleNewsScraper(Scraper):
             article.download(input_html=page)
             article.set_meta_language(self._language)
             article.parse()
-            self._store_article(company, name, article.text, article.authors, article.publish_date)
+            self._store_article(company, link, name, article.text, article.authors, article.publish_date)
         except (InvalidURL, asyncio.TimeoutError, RuntimeError, ClientConnectionError) as err:
             print("Url fail: " + repr(err) + " Url is: " + repr(link))
 
     async def _scrape_google_news(self, session, link: Record):
         """ Scrapes google news page """
         print("Scraping: " + link.name)
+        self._store_company(link.name)
         async with session.get(link.data) as response:
             page = await response.text()
         html = fromstring(page)
@@ -137,6 +151,8 @@ class GoogleNewsScraper(Scraper):
             search_query = GOOGLE_NEWS_DE_SEARCH
         else:
             raise RuntimeError("No language found: " + self._language)
+        self._engine, self._sessionmaker = connect_database(self._output_file)
+        self._input_file = read_skip_empty(self._input_file, 1)
         loop = asyncio.get_event_loop()
         queries = [
             Record(r.name, GOOGLE_NEWS_URL + search_query.format(r.data))
@@ -157,7 +173,15 @@ class GoogleNewsScraper(Scraper):
         finally:
             self.dispose_resources()
 
+    def run_in_executor(self):
+        """ Run in executor """
+        self.set_loop()
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.run())
+
     def dispose_resources(self):
         """ Dispose output file writer """
-        if self._output_file:
-            self._output_file.close()
+        if self._input_file:
+            self._input_file.close()
+        if self._engine:
+            self._engine.dispose()

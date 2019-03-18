@@ -1,7 +1,17 @@
 """ Common interfaces for scraper classes """
 import csv
+from asyncio import new_event_loop, set_event_loop
 from collections import namedtuple
 from abc import ABC, abstractmethod
+LINUX_LOOP = True
+try:
+    import uvloop
+except ModuleNotFoundError:
+    LINUX_LOOP = False
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+from sqlalchemy.exc import IntegrityError
 
 Record = namedtuple("NewsRecord", ["name", "data"])
 
@@ -14,15 +24,22 @@ def read_skip_empty(file_name: str, column: int):
             if row[column]:
                 yield Record(row[0], row[column])
 
-def csv_writer(file_name: str):
-    """ Writes list of rows into file """
-    with open(file_name, "w") as file:
-        writer = csv.writer(file, delimiter="|")
-        while True:
-            row = yield
-            if not row:
-                break
-            writer.writerow(row)
+def connect_database(database_file: str):
+    """ Connect to sqlalchemy database """
+    engine = create_engine(
+        "sqlite:///" + database_file,
+        poolclass=StaticPool,
+        connect_args={"check_same_thread": False})
+    return engine, sessionmaker(bind=engine, autoflush=False)
+
+def ignore_integriy_save(session, record):
+    """ Store record and ignore integrity exception """
+    try:
+        session.add(record)
+        session.commit()
+        session.close()
+    except IntegrityError as err:
+        print(err)
 
 class Scraper(ABC):
     """ Main scraper interface for scraper classes """
@@ -31,6 +48,15 @@ class Scraper(ABC):
     def create_scraper(cls, user_agent=None, accept_language=None):
         """ Create scraper instance """
         return cls(user_agent=user_agent, accept_language=accept_language)
+
+    @staticmethod
+    def set_loop():
+        """ Set event loop """
+        if LINUX_LOOP:
+            uvloop.install()
+        else:
+            loop = new_event_loop()
+            set_event_loop(loop)
 
     def set_language(self, language: str):
         """ Set language for search query """
@@ -48,7 +74,12 @@ class Scraper(ABC):
 
     @abstractmethod
     async def run(self):
-        """ Run event loop in executor """
+        """ Run event loop  """
+        raise NotImplementedError("Should implement run")
+
+    @abstractmethod
+    def run_in_executor(self):
+        """ Run in executor """
         raise NotImplementedError("Should implement run")
 
     @abstractmethod
