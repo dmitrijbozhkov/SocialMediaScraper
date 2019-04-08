@@ -9,7 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from social_media_scraper.commons import scroll_bottom, collect_element, lookup_element
-from social_media_scraper.model import XingAccount, XingWorkExperience, XingEducation
+from social_media_scraper.account.model import XingAccount, XingWorkExperience, XingEducation
 from social_media_scraper.xing.page_elements import *
 
 PageContent = namedtuple("PageContent", ["outer", "inner", "link"])

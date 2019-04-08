@@ -23,3 +23,6 @@ if (frameElement) {
 }
 return 1;
 """
+# Xing search selectors
+NO_RESULTS_CONTAINER = ".ResultsOverview-style-title-8d816f3f"
+SEARCH_RESULT_ELEMENT = "a.Card-style-containerLink-a3b51280"

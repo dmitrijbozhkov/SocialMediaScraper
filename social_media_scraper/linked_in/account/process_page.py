@@ -7,7 +7,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from lxml.html import fromstring
-from social_media_scraper.model import LinkedInAccount, LinkedInWorkExperience, LinkedInEducation
+from social_media_scraper.account.model import LinkedInAccount, LinkedInWorkExperience, LinkedInEducation
 from social_media_scraper.linked_in.page_elements import *
 from social_media_scraper.commons import (scroll_bottom,
                                           check_if_present,

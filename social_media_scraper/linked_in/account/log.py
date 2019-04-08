@@ -1,5 +1,5 @@
 """ Functionality for logging stored LinkedIn records """
-from social_media_scraper.model import WorkAccountSnapshot
+from social_media_scraper.account.model import WorkAccountSnapshot
 
 LOG_LINKED_IN_MESSAGE_TEMPLATE = """
 LinkedIn account of {} stored, currently occupying position: {}

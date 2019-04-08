@@ -37,8 +37,12 @@ def extract_number(string: str) -> str:
 
 def run_concurrently(stream: Observable, observer: Observer, tkinter_scheduler, pool_scheduler):
     """ Subscribe and apply scedulers """
+    if tkinter_scheduler:
+        return stream \
+            .observe_on(tkinter_scheduler) \
+            .subscribe_on(pool_scheduler) \
+            .subscribe(observer)
     return stream \
-        .observe_on(tkinter_scheduler) \
         .subscribe_on(pool_scheduler) \
         .subscribe(observer)
 

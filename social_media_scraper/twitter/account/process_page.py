@@ -6,7 +6,7 @@ from lxml.html import fromstring
 from lxml import etree as tr
 from social_media_scraper.twitter.page_elements import *
 from social_media_scraper.commons import scroll_bottom, check_if_present, collect_element, lookup_element
-from social_media_scraper.model import (Tweet,
+from social_media_scraper.account.model import (Tweet,
                                         TwitterAccount,
                                         TwitterAccountDetails)
 

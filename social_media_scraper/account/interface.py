@@ -4,8 +4,8 @@ from tkinter import messagebox
 from typing import List
 import tkinter.filedialog as filedialog
 from tkinter.scrolledtext import ScrolledText
-from social_media_scraper.job_manager import DatabaseManager
-from social_media_scraper.logging_window import write_window
+from social_media_scraper.account.job_manager import DatabaseManager, run_job_manager, RunArgs
+from social_media_scraper.account.logging_window import write_window
 
 INPUT_PLACEHOLDER = "Choose input file name..."
 OUTPUT_PLACEHOLDER = "Choose output directory..."
@@ -128,17 +128,18 @@ class Window(Frame):
         """ Start button callback to start scraping information """
         if self.check_startup_errors():
             write_window(self.debug_log_field, "Starting scraping...")
-            database_path = "{}/{}.db".format(self.output_file_directory, self.output_file_name.get())
-            job = DatabaseManager()
-            request_min = int(self.wait_min.get())
-            request_max = int(self.wait_max.get())
-            self.running_job = job.init_database(database_path, self.args.sql) \
-                .init_drivers(self.show_browser.get(), self.args.geckodriver) \
-                .init_schedulers(self.master) \
-                .process_person(self.input_file_name) \
-                .compose_streams(request_min, request_max) \
-                .init_job(self.debug_log_field) \
-                .begin_scraping()
+            run_arguments = RunArgs(
+                self.input_file_name,
+                "{}/{}.db".format(self.output_file_directory, self.output_file_name.get()),
+                self.wait_min.get(),
+                self.wait_max.get(),
+                self.args.sql,
+                self.args.geckodriver,
+                self.show_browser.get(),
+                self.master,
+                self.debug_log_field
+            )
+            self.running_job = run_job_manager(run_arguments)
 
     def stop_scraping(self):
         """ Stop scraping callback to stop running scraper """

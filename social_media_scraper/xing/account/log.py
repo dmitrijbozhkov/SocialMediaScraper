@@ -1,5 +1,5 @@
 """ Functionality for logging stored xing records """
-from social_media_scraper.model import WorkAccountSnapshot
+from social_media_scraper.account.model import WorkAccountSnapshot
 
 LOG_XING_MESSAGE_TEMPLATE = """
 Xing account of {} stored, currently occupying position: {}

@@ -1,5 +1,5 @@
 """ Functionality for logging stored twitter records """
-from social_media_scraper.model import TwitterAccountSnapshot
+from social_media_scraper.account.model import TwitterAccountSnapshot
 
 LOG_TWITTER_MESSAGE_TEMPLATE = """
 Twitter account @{} stored by name {}

@@ -7,8 +7,8 @@ from selenium.webdriver import Firefox
 from selenium.common.exceptions import WebDriverException
 from sqlalchemy.orm import scoped_session
 from social_media_scraper.commons import run_concurrently, throttle_filtered
-from social_media_scraper.logging_window import SocialMediaObserver
-from social_media_scraper.store_records import store_person_record, store_info_record
+from social_media_scraper.account.logging_window import WindowSocialMediaObserver, ConsoleSocialMediaObserver
+from social_media_scraper.account.store_records import store_person_record, store_info_record
 
 JobSchedulers = namedtuple("JobSchedulers", ["tkinter", "pool"])
 
@@ -83,8 +83,12 @@ class ScrapingJobComposer(object):
 
     def subscribe_log(self, log_window):
         """ Subscribes to logging observer and sets scheduler """
-        observer = SocialMediaObserver(log_window, self.driver)
-        self.stream = run_concurrently(self.stream, observer, self.schedulers.tkinter, self.schedulers.pool)
+        if log_window:
+            observer = WindowSocialMediaObserver(log_window, self.driver)
+            self.stream = run_concurrently(self.stream, observer, self.schedulers.tkinter, self.schedulers.pool)
+        else:
+            observer = ConsoleSocialMediaObserver(self.driver)
+            self.stream = run_concurrently(self.stream, observer, self.schedulers.tkinter, self.schedulers.pool)
         return self
 
     def stop_stream(self):

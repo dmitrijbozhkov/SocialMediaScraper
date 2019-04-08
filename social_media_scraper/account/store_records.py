@@ -1,6 +1,6 @@
 """ Functions to store records """
 from sqlalchemy.orm import scoped_session
-from social_media_scraper.model import Person
+from social_media_scraper.account.model import Person
 
 def store_person_record(session_factory: scoped_session, data):
     """ Stores person record in order to attach accouns to it """

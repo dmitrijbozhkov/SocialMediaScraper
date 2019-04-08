@@ -12,21 +12,47 @@ from sqlalchemy.pool import StaticPool
 from selenium.webdriver.firefox.options import Options
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
-from social_media_scraper.model import Base
+from social_media_scraper.account.model import Base
 from social_media_scraper.login import social_media_logins, set_login_data
 from social_media_scraper.commons import run_concurrently
-from social_media_scraper.compose import ScrapingJobComposer, JobSchedulers
-from social_media_scraper.linked_in.process_page import setup_linked_in, collect_linked_in
-from social_media_scraper.twitter.process_page import setup_twitter, collect_twitter
-from social_media_scraper.xing.process_page import setup_xing, collect_xing
-from social_media_scraper.linked_in.log import log_linked_in
-from social_media_scraper.twitter.log import log_twitter
-from social_media_scraper.xing.log import log_xing
-from social_media_scraper.logging_window import JobObserver
+from social_media_scraper.account.compose import ScrapingJobComposer, JobSchedulers
+from social_media_scraper.linked_in.account.process_page import setup_linked_in, collect_linked_in
+from social_media_scraper.twitter.account.process_page import setup_twitter, collect_twitter
+from social_media_scraper.xing.account.process_page import setup_xing, collect_xing
+from social_media_scraper.linked_in.account.log import log_linked_in
+from social_media_scraper.twitter.account.log import log_twitter
+from social_media_scraper.xing.account.log import log_xing
+from social_media_scraper.account.logging_window import WindowJobObserver, ConsoleJobObserver
 
 DatabaseDrivers = namedtuple("DatabaseDrivers", ["engine", "scoped_factory"])
 
 BrowserDrivers = namedtuple("BrowserDrivers", ["twitter", "linkedIn", "xing"])
+
+RunArgs = namedtuple("RunArgs", [
+    "input_file",
+    "output_file",
+    "request_min",
+    "request_max",
+    "sql",
+    "geckodriver",
+    "show_browser",
+    "master",
+    "debug_field"
+])
+
+def run_job_manager(args: RunArgs):
+    """"""
+    job = DatabaseManager()
+    request_min = int(args.request_min)
+    request_max = int(args.request_max)
+    running_job = job.init_database(args.output_file, args.sql) \
+        .init_drivers(args.show_browser, args.geckodriver) \
+        .init_schedulers(args.master) \
+        .process_person(args.input_file) \
+        .compose_streams(request_min, request_max) \
+        .init_job(args.debug_field) \
+        .begin_scraping()
+    return running_job
 
 class JobManager(object):
     """ Manages running job """
@@ -81,7 +107,10 @@ class StreamManager(object):
         """ Initializes schedulers for datastreams """
         optimal_thread_count = multiprocessing.cpu_count()
         pool_scheduler = ThreadPoolScheduler(optimal_thread_count)
-        tkinter_scheduler = TkinterScheduler(master)
+        if master:
+            tkinter_scheduler = TkinterScheduler(master)
+        else:
+            tkinter_scheduler = None
         self._schedulers = JobSchedulers(tkinter_scheduler, pool_scheduler)
         return self
 
@@ -122,7 +151,10 @@ class StreamManager(object):
 
     def init_job(self, log_window) -> JobManager:
         """ Initializes subscribers for prepared datastreams and returns JobManager """
-        job_sub = JobObserver(log_window, self._database, self._file)
+        if log_window:
+            job_sub = WindowJobObserver(log_window, self._database, self._file)
+        else:
+            job_sub = ConsoleJobObserver(self._database, self._file)
         job = run_concurrently(self._datastreams["job"], job_sub, self._schedulers.tkinter, self._schedulers.pool)
         streams = {
             "twitter": self._datastreams["twitter"].subscribe_log(log_window),

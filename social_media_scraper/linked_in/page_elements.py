@@ -34,3 +34,6 @@ EDUCATION_SECTION = ".education-section .pv-profile-section__actions-inline"
 COMPANY_TIMELINE_BUTTONS = ".pv-entity__paging"
 BUTTON_MORE = ".pv-position-entity .lt-line-clamp__more"
 CONTENT = ".pv-content"
+# Search result elements
+SEARCH_RESULT = "li.search-result"
+NO_RESULT_ELEMENT = ".search-no-results__container"

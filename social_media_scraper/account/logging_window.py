@@ -5,9 +5,9 @@ from rx import Observer, Observable
 
 JOB_COMPLETE_MESSAGE = "Scraping job is done!"
 
-EXCEPTION_TEMPLATE = "Error occured: " 
+EXCEPTION_TEMPLATE = "Error occured: "
 
-class SocialMediaObserver(Observer):
+class WindowSocialMediaObserver(Observer):
     """ Logs social media processing on window and manages browser """
 
     def __init__(self, log_window, driver):
@@ -25,8 +25,8 @@ class SocialMediaObserver(Observer):
     def on_completed(self):
         self.driver.close()
 
-class JobObserver(Observer):
-    """ Logs job finishing and disposes database and file resources """
+class WindowJobObserver(Observer):
+    """ Logs job finishing into window and disposes database and file resources """
 
     def __init__(self, log_window, database, file):
         self.log_window = log_window
@@ -46,6 +46,46 @@ class JobObserver(Observer):
         """ Write complete message """
         logging.info("COMPLETED!")
         write_window(self.log_window, JOB_COMPLETE_MESSAGE)
+        self.file.close()
+        self.database.engine.dispose()
+
+class ConsoleSocialMediaObserver(Observer):
+    """ Logs social media processing in console and manages browser """
+
+    def __init__(self, driver):
+        self.driver = driver
+
+    def on_next(self, value):
+        """ Write log in window """
+        print(value)
+
+    def on_error(self, error):
+        """ Write error message """
+        print(error)
+
+    def on_completed(self):
+        self.driver.close()
+
+class ConsoleJobObserver(Observer):
+    """ Logs job finishing into console and disposes database and file resources """
+
+    def __init__(self, database, file):
+        self.database = database
+        self.file = file
+
+    def on_next(self, value):
+        """ Write log in window """
+        logging.info("NEXT!")
+        print(value)
+
+    def on_error(self, error):
+        """ Write error message """
+        print(error)
+
+    def on_completed(self):
+        """ Write complete message """
+        logging.info("COMPLETED!")
+        print(JOB_COMPLETE_MESSAGE)
         self.file.close()
         self.database.engine.dispose()
 
