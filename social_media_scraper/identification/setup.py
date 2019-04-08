@@ -18,3 +18,5 @@ def run_app(args: dict):
     for keywords in reader:
         matched = throttled_matcher.send(keywords)
         writer.send([keywords[0], matched.linked_in, matched.xing])
+    throttled_matcher.close()
+    writer.close()
