@@ -22,3 +22,6 @@ TWEET_AMOUNT_LIKES = to_xpath(".ProfileTweet-action--favorite .ProfileTweet-acti
 STREAM_HAS_MORE_TWEETS = ".has-more-items"
 CONTENT = "#page-container"
 ENGLISH_QUERY = "?lang=en"
+# Twitter search elements
+EMPTY_RESULTS = "div.SearchEmptyTimeline"
+SEARCH_RESULT_LINKS = "div.ProfileCard > a"

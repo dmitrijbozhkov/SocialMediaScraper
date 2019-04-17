@@ -35,5 +35,5 @@ COMPANY_TIMELINE_BUTTONS = ".pv-entity__paging"
 BUTTON_MORE = ".pv-position-entity .lt-line-clamp__more"
 CONTENT = ".pv-content"
 # Search result elements
-SEARCH_RESULT = "li.search-result"
-NO_RESULT_ELEMENT = ".search-no-results__container"
+SEARCH_RESULT_LINKS = "li.search-result a"
+EMPTY_RESULTS = ".search-no-results__container"

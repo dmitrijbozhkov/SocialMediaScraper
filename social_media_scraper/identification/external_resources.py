@@ -3,12 +3,12 @@ import csv
 import time
 import random
 from collections import namedtuple
-from typing import Generator, Tuple
+from typing import Generator
 from datetime import datetime
 from selenium.webdriver import Firefox, FirefoxProfile, FirefoxOptions
 from social_media_scraper.login import social_media_logins, set_login_data
 
-Browsers = namedtuple("Browsers", ["LinkedIn", "Xing"])
+Browsers = namedtuple("Browsers", ["LinkedIn", "Xing", "Twitter"])
 
 def read_csv(file_name: str, header=False):
     """
@@ -82,6 +82,10 @@ def prepare_browsers(headless: bool, driver_path: str) -> Browsers:
         options=driver_options,
         firefox_profile=profile,
         executable_path=driver_path)
+    twitter_driver = Firefox(
+        options=driver_options,
+        firefox_profile=profile,
+        executable_path=driver_path)
     set_login_data(linked_in_driver, logins[0])
     set_login_data(xing_driver, logins[1])
-    return Browsers(linked_in_driver, xing_driver)
+    return Browsers(linked_in_driver, xing_driver, twitter_driver)
