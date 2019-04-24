@@ -4,8 +4,6 @@ from collections import namedtuple
 from concurrent.futures import ThreadPoolExecutor, wait
 from selenium.webdriver import Firefox
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
 from social_media_scraper.identification.external_resources import Browsers
 from social_media_scraper.identification.common_scripts import NOTHING_CHOSEN_CLASS
 from social_media_scraper.twitter.identity_search.prepare_search import (make_twitter_link,

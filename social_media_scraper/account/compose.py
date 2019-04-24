@@ -95,6 +95,6 @@ class ScrapingJobComposer(object):
         """ Disposes subscription and closes browser """
         self.stream.dispose()
         try:
-            self.driver.close()
+            self.driver.quit()
         except WebDriverException:
             logging.debug("Driver already closed")

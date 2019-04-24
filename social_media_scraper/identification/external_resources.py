@@ -29,7 +29,7 @@ def write_csv(file_name: str, header=None):
     :param file_name str: File path to write into
     :param header list: Header row
     """
-    with open(file_name, "w") as file:
+    with open(file_name, "w", newline="") as file:
         writer = csv.writer(file, quotechar='"', quoting=csv.QUOTE_MINIMAL)
         if header:
             writer.writerow(header)
