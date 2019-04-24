@@ -10,6 +10,7 @@ from social_media_scraper.xing.page_elements import SEARCH_RESULT_LINKS, NO_RESU
 
 SEARCH_LINK = URL("https://www.xing.com/search/members")
 NO_MEMBERS_TEXT = "No members found"
+XING_ACCOUNT_STARTS_LINK = "https://www.xing.com/profile/"
 
 def make_xing_link(keywords: str) -> str:
     """
@@ -32,3 +33,10 @@ def xing_wait(driver: Firefox):
     wait.until(lambda x: \
         EC.presence_of_element_located((By.CSS_SELECTOR, SEARCH_RESULT_LINKS)) or \
         EC.text_to_be_present_in_element((By.CSS_SELECTOR, NO_RESULTS_CONTAINER), NO_MEMBERS_TEXT))
+
+def xing_account_wait(driver: Firefox):
+    """
+    Waits when LinkedIn account will be chosen
+    :param driver Firefox: Firefox driver
+    """
+    return driver.current_url.startswith(XING_ACCOUNT_STARTS_LINK)

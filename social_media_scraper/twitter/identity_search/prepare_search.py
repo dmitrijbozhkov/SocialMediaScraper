@@ -30,3 +30,10 @@ def twitter_wait(driver: Firefox):
     wait.until(lambda x: \
         EC.presence_of_element_located((By.CSS_SELECTOR, SEARCH_RESULT_LINKS)) or \
         EC.presence_of_element_located((By.CSS_SELECTOR, EMPTY_RESULTS)))
+
+def twitter_account_wait(driver: Firefox):
+    """
+    Waits when LinkedIn account will be chosen
+    :param driver Firefox: Firefox driver
+    """
+    return (not driver.current_url.startswith(str(SEARCH_LINK))) and driver.current_url.startswith("https://twitter.com/")

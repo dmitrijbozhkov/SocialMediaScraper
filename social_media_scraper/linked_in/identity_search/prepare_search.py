@@ -9,6 +9,7 @@ from social_media_scraper.identification.common_scripts import build_script
 from social_media_scraper.linked_in.page_elements import SEARCH_RESULT_LINKS, EMPTY_RESULTS
 
 SEARCH_LINK = URL("https://www.linkedin.com/search/results/people/")
+LINKED_IN_STARTS_LINK = "https://www.linkedin.com/in/"
 
 def make_linked_in_link(keywords: str) -> str:
     """
@@ -31,3 +32,10 @@ def linked_in_wait(driver: Firefox):
     wait.until(lambda x: \
         EC.presence_of_element_located((By.CSS_SELECTOR, SEARCH_RESULT_LINKS)) or \
         EC.presence_of_element_located((By.CSS_SELECTOR, EMPTY_RESULTS)))
+
+def linked_in_account_wait(driver: Firefox):
+    """
+    Waits when LinkedIn account will be chosen
+    :param driver Firefox: Firefox driver
+    """
+    return driver.current_url.startswith(LINKED_IN_STARTS_LINK)
