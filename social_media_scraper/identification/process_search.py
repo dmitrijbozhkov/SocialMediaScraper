@@ -58,7 +58,7 @@ def search_social_media(driver: Firefox, link: str, capture_script: str, waiting
     else:
         waiter.until(partial(link_changed_wait, driver.current_url))
     driver.execute_script(SCRIPT_FUNCTIONS + "setDone();")
-    if driver.find_element_by_css_selector(NOTHING_CHOSEN_CLASS):
+    if driver.find_elements_by_css_selector(NOTHING_CHOSEN_CLASS):
         return ""
     return driver.current_url
 
