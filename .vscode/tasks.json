@@ -8,12 +8,6 @@
             "type": "shell",
             "command": "${config:python.pythonPath} -m pytest social_media_scraper/tests/",
             "problemMatcher": []
-        },
-        {
-            "label": "Run identity search tests",
-            "type": "shell",
-            "command": "${config:python.pythonPath} -m pytest identity_search/",
-            "problemMatcher": []
         }
     ]
 }

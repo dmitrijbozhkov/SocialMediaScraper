@@ -2,10 +2,16 @@
 from tkinter import *
 from tkinter import messagebox
 from typing import List
+from concurrent.futures import ThreadPoolExecutor
 import tkinter.filedialog as filedialog
 from tkinter.scrolledtext import ScrolledText
-from social_media_scraper.account.job_manager import DatabaseManager, run_job_manager, RunArgs
-from social_media_scraper.account.logging_window import write_window
+from social_media_scraper.external_resources import (
+    read_csv,
+    throttle_emissions,
+    prepare_browsers,
+    database_writer)
+from social_media_scraper.account.process_scraping import account_scraper
+from social_media_scraper.account.model import Base
 
 INPUT_PLACEHOLDER = "Choose input file name..."
 OUTPUT_PLACEHOLDER = "Choose output directory..."
@@ -20,7 +26,7 @@ class Window(Frame):
         self.show_browser = BooleanVar()
         self.input_file_name = None
         self.output_file_directory = None
-        self.running_job = None
+        self.running_job = False
         self.database = None
         self.driver = None
         self.file = None
@@ -88,6 +94,12 @@ class Window(Frame):
         self.stop_button = Button(self, text="Stop", command=self.stop_scraping)
         self.stop_button.grid(column=0, row=8)
 
+    def log_window(self, message: str):
+        """ Log message into debug window """
+        self.debug_log_field.config(state=NORMAL)
+        self.debug_log_field.insert(END, message + "\n")
+        self.debug_log_field.config(state=DISABLED)
+
     def choose_input_file(self):
         """ Choose input file button callback """
         chosen = filedialog.askopenfilename(filetypes=[("Comma Separated Values File", "*.csv")])
@@ -124,28 +136,51 @@ class Window(Frame):
             return False
         return True
 
+    def interface_scraping(self):
+        """ Scrape accounts with interface """
+        database_path = "{}/{}.db".format(self.output_file_directory, self.output_file_name.get())
+        executor = ThreadPoolExecutor(3)
+        browsers = prepare_browsers(self.show_browser.get(), self.args.geckodriver)
+        reader = read_csv(self.input_file_name, True)
+        scraper = throttle_emissions(account_scraper(browsers, executor), int(self.wait_min.get()), int(self.wait_max.get()))
+        writer = database_writer(database_path, Base, self.args.sql)
+        for row in reader:
+            if not self.running_job:
+                break
+            temp = scraper.send(row)
+            log_accounts = []
+            if temp.twitterAccount:
+                log_accounts.append("Twitter account @" + temp.twitterAccount.atName)
+            if temp.linkedInAccount:
+                log_accounts.append("LinkedIn account " + temp.linkedInAccount.name)
+            if temp.xingAccount:
+                log_accounts.append("Xing account " + temp.xingAccount.name)
+            self.log_window("Wrting account of {} with accounts:\n {}".format(temp.name, ",\n".join(log_accounts)))
+            writer.send(temp)
+        scraper.close()
+        writer.close()
+        executor.shutdown()
+        browsers.Twitter.quit()
+        browsers.LinkedIn.quit()
+        browsers.Xing.quit()
+        self.log_window("Scraping end")
+
     def start_scraping(self):
         """ Start button callback to start scraping information """
         if self.check_startup_errors():
-            write_window(self.debug_log_field, "Starting scraping...")
-            run_arguments = RunArgs(
-                self.input_file_name,
-                "{}/{}.db".format(self.output_file_directory, self.output_file_name.get()),
-                self.wait_min.get(),
-                self.wait_max.get(),
-                self.args.sql,
-                self.args.geckodriver,
-                self.show_browser.get(),
-                self.master,
-                self.debug_log_field
-            )
-            self.running_job = run_job_manager(run_arguments)
+            self.log_window("Starting scraping...")
+            self.start_button.config(state=DISABLED)
+            self.running_job = True
+            self.interface_scraping()
+            self.running_job = False
+            self.start_button.config(state=NORMAL)
+            self.log_window("Scraping stopped")
 
     def stop_scraping(self):
         """ Stop scraping callback to stop running scraper """
         if self.running_job:
-            self.running_job.stop_scraping()
-            self.running_job = None
+            self.log_window("Stopping scraping...")
+            self.running_job = False
 
 def set_entry(entry, message):
     """ Appends text to window """

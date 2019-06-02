@@ -1,5 +1,5 @@
 """ Page element constants """
-from social_media_scraper.commons import to_xpath
+from social_media_scraper.account.page_utils import  to_xpath
 
 # Xing profile selectors
 NAME = to_xpath("h2[data-qa='malt-profile-display-name'] > span")

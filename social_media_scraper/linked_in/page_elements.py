@@ -1,5 +1,5 @@
 """ LinkedIn page element constants """
-from social_media_scraper.commons import to_xpath
+from social_media_scraper.account.page_utils import to_xpath
 
 # LinkedIn user info page selectors
 NAME = to_xpath(".pv-top-card-section__name")

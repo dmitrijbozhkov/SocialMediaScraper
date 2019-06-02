@@ -1,5 +1,5 @@
 """ Twitter page element costants """
-from social_media_scraper.commons import to_xpath
+from social_media_scraper.account.page_utils import to_xpath
 
 # Twitter profile selectors
 PROFILE_NAME = to_xpath(".ProfileHeaderCard-nameLink")

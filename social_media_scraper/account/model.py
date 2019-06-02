@@ -4,10 +4,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime
 from sqlalchemy.orm import relationship
 
-TwitterAccountSnapshot = namedtuple("TwitterAccountSnapshot", ["name", "atName"])
-
-WorkAccountSnapshot = namedtuple("LinkedInAccountSnapshot", ["name", "currentPosition"])
-
 Base = declarative_base()
 
 class XingEducation(Base):
@@ -45,10 +41,6 @@ class XingAccount(Base):
     xingEducations = relationship("XingEducation", back_populates="xingAccount")
     xingWorkExperiences = relationship("XingWorkExperience", back_populates="xingAccount")
 
-    def get_snapshot(self):
-        """ Returns data for logging record """
-        return WorkAccountSnapshot(self.name, self.currentPosition)
-
 class LinkedInEducation(Base):
     __tablename__ = "LinkedInEducation"
     linkedInEducationId = Column(Integer, primary_key=True, autoincrement=True)
@@ -81,10 +73,6 @@ class LinkedInAccount(Base):
     person = relationship("Person", back_populates="linkedInAccount", uselist=False)
     linkedInWorkExperiences = relationship("LinkedInWorkExperience", back_populates="linkedInAccount")
     linkedInEducations = relationship("LinkedInEducation", back_populates="linkedInAccount")
-
-    def get_snapshot(self):
-        """ Returns data for logging record """
-        return WorkAccountSnapshot(self.name, self.currentPosition)
 
 class TwitterAccountDetails(Base):
     __tablename__ = "TwitterAccountDetails"
@@ -120,10 +108,6 @@ class TwitterAccount(Base):
     twitterAccountDetailsId = Column(Integer, ForeignKey("TwitterAccountDetails.twitterAccountDetailsId"))
     twitterAccountDetails = relationship("TwitterAccountDetails", back_populates="twitterAccount", uselist=False)
     tweets = relationship("Tweet", back_populates="twitterAccount")
-
-    def get_snapshot(self):
-        """ Returns data for logging record """
-        return TwitterAccountSnapshot(self.name, self.atName)
 
 class Person(Base):
     """ Table, that represents a person, whose data should be scraped """

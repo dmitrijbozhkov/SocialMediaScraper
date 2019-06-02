@@ -9,12 +9,13 @@ from selenium.webdriver.common.by import By
 from lxml.html import fromstring
 from social_media_scraper.account.model import LinkedInAccount, LinkedInWorkExperience, LinkedInEducation
 from social_media_scraper.linked_in.page_elements import *
-from social_media_scraper.commons import (scroll_bottom,
-                                          check_if_present,
-                                          collect_element,
-                                          click_all,
-                                          lookup_element,
-                                          scroll_middle)
+from social_media_scraper.account.page_utils import (
+    scroll_bottom,
+    check_if_present,
+    collect_element,
+    click_all,
+    lookup_element,
+    scroll_middle)
 
 PageContent = namedtuple("PageContent", ["page", "link"])
 
@@ -27,29 +28,6 @@ def open_list(driver: webdriver.Firefox, element_selector: str, more: str, less:
         click_all(driver, more_selector)
         wait.until(lambda d: d.find_elements_by_css_selector(more_selector) or \
             d.find_elements_by_css_selector(less_selector))
-
-def setup_linked_in(driver: webdriver.Firefox, data: dict):
-    """ Sets up LinkedIn page to be scraped """
-    driver.get(data["linkedIn"])
-    scroll_bottom(driver)
-    driver.implicitly_wait(0.5)
-    scroll_middle(driver)
-    WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, CONTENT)))
-    WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, EXPERIENCE_ELEMENT)))
-    WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, EDUCATION_ELEMENT)))
-    try:
-        open_list(driver, EXPERIENCE_SECTION, MORE_LOCATOR, LESS_LOCATOR)
-    except NoSuchElementException:
-        pass
-    try:
-        open_list(driver, EDUCATION_SECTION, MORE_LOCATOR, LESS_LOCATOR)
-    except NoSuchElementException:
-        pass
-    open_list(driver, COMPANY_TIMELINE_BUTTONS, MORE_LOCATOR, LESS_LOCATOR)
-    click_all(driver, BUTTON_MORE)
-    html = driver.find_element_by_css_selector(CONTENT).get_attribute("innerHTML")
-    data["linkedIn"] = PageContent(fromstring(html), data["linkedIn"])
-    return data
 
 def collect_timeline_experience(element, timeline) -> List[LinkedInWorkExperience]:
     """ Parses each wotk experience timeline element and extracts data from it """
@@ -94,19 +72,39 @@ def collect_education(page):
             dateRange=collect_element(education, EDUCATION_DATERANGE)))
     return education_records
 
-def collect_linked_in(data: dict):
+def get_linked_in_page(driver: webdriver.Firefox, link: str):
+    """ Sets up LinkedIn page to be scraped """
+    driver.get(link)
+    scroll_bottom(driver)
+    driver.implicitly_wait(0.5)
+    scroll_middle(driver)
+    WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, CONTENT)))
+    WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, EXPERIENCE_ELEMENT)))
+    WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, EDUCATION_ELEMENT)))
+    try:
+        open_list(driver, EXPERIENCE_SECTION, MORE_LOCATOR, LESS_LOCATOR)
+    except NoSuchElementException:
+        pass
+    try:
+        open_list(driver, EDUCATION_SECTION, MORE_LOCATOR, LESS_LOCATOR)
+    except NoSuchElementException:
+        pass
+    open_list(driver, COMPANY_TIMELINE_BUTTONS, MORE_LOCATOR, LESS_LOCATOR)
+    click_all(driver, BUTTON_MORE)
+    return driver.find_element_by_css_selector(CONTENT).get_attribute("innerHTML")
+
+def collect_linked_in_page(html: str, link: str):
     """ Gathers data rom LinkedIn page """
-    page = data["linkedIn"].page
+    page = fromstring(html)
     name = collect_element(page, NAME)
     current_position = collect_element(page, CURRENT_POSITION)
     location = collect_element(page, LOCATION)
     experiences = collect_experience(page)
     education_records = collect_education(page)
-    data["linkedIn"] = LinkedInAccount(
-        linkedInAccountId=data["linkedIn"].link,
+    return LinkedInAccount(
+        linkedInAccountId=link,
         name=name,
         currentPosition=current_position,
         locaton=location,
         linkedInWorkExperiences=experiences,
         linkedInEducations=education_records)
-    return data

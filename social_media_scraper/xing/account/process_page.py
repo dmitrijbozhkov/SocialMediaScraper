@@ -8,7 +8,7 @@ from selenium import webdriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
-from social_media_scraper.commons import scroll_bottom, collect_element, lookup_element
+from social_media_scraper.account.page_utils import scroll_bottom, collect_element, lookup_element
 from social_media_scraper.account.model import XingAccount, XingWorkExperience, XingEducation
 from social_media_scraper.xing.page_elements import *
 
@@ -19,17 +19,6 @@ def get_inner_html(driver: webdriver.Firefox):
     while not driver.execute_script(INNER_FRAME_READY) == 0:
         driver.implicitly_wait(0.5)
     return driver.execute_script("return document.querySelector('iframe#tab-content').contentWindow.document.body.innerHTML")
-
-def setup_xing(driver: webdriver.Firefox, data: dict):
-    """ Set ups LinkedIn page to be scraped """
-    driver.get(data["xing"])
-    scroll_bottom(driver)
-    wait = WebDriverWait(driver, 360)
-    wait.until(EC.presence_of_element_located((By.XPATH, NAME)))
-    outer_html = driver.find_element_by_css_selector(OUTER_CONTENT).get_attribute("innerHTML")
-    inner_html = get_inner_html(driver)
-    data["xing"] = PageContent(fromstring(outer_html), fromstring(inner_html), data["xing"])
-    return data
 
 def get_content(element):
     """ Get text content from an element without tags """
@@ -78,9 +67,12 @@ def compose_experience(experience: dict):
 
 def collect_work_experience(inner_element):
     """ Collects work experience from page """
-    work_element = lookup_element(inner_element, WORK_EXPERIENCE)[0]
-    experinece_data = json.loads(work_element.get("value"))
-    return list(map(compose_experience, experinece_data))
+    work_element = lookup_element(inner_element, WORK_EXPERIENCE)
+    if work_element:
+        experinece_data = json.loads(work_element[0].get("value"))
+        return list(map(compose_experience, experinece_data))
+    else:
+        return []
 
 def compose_education(education: dict):
     """ Compose XingEducation from input dictionary """
@@ -95,19 +87,32 @@ def compose_education(education: dict):
 
 def collect_education(inner_element):
     """ Collects education fom page """
-    education_element = lookup_element(inner_element, EDUCATION)[0]
-    education_data = json.loads(education_element.get("value"))
-    return list(map(compose_education, education_data))
+    education_element = lookup_element(inner_element, EDUCATION)
+    if education_element:
+        education_data = json.loads(education_element[0].get("value"))
+        return list(map(compose_education, education_data))
+    else:
+        return []
 
-def collect_xing(data: dict):
+def get_xing_page(driver: webdriver.Firefox, link: str):
+    """ Set ups LinkedIn page to be scraped """
+    driver.get(link)
+    scroll_bottom(driver)
+    wait = WebDriverWait(driver, 360)
+    wait.until(EC.presence_of_element_located((By.XPATH, NAME)))
+    outer_html = driver.find_element_by_css_selector(OUTER_CONTENT).get_attribute("innerHTML")
+    inner_html = get_inner_html(driver)
+    return PageContent(outer_html, inner_html, link)
+
+def collect_xing_page(data: PageContent):
     """ Gathers data rom LinkedIn page """
-    outer_page = data["xing"].outer
-    inner_page = data["xing"].inner
+    outer_page = fromstring(data.outer)
+    inner_page = fromstring(data.inner)
     tags = collect_tags(inner_page)
     work_experience = collect_work_experience(inner_page)
     education = collect_education(inner_page)
-    data["xing"] = XingAccount(
-        xingAccountId=data["xing"].link,
+    return XingAccount(
+        xingAccountId=data.link,
         name=collect_element(outer_page, NAME),
         currentPosition=collect_element(outer_page, CURRENT_POSITION),
         locaton=collect_element(outer_page, LOCATION),
@@ -115,4 +120,3 @@ def collect_xing(data: dict):
         wants=tags[1],
         xingWorkExperiences=work_experience,
         xingEducations=education)
-    return data
