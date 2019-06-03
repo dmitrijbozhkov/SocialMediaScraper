@@ -18,16 +18,16 @@ def identity_matcher(browsers: Browsers, executor: ThreadPoolExecutor):
     xing_searcher = XingSearcher(browsers.Xing)
     while True:
         search_keywords = yield result
+        twitter_future = executor.submit(
+            twitter_searcher.search_account,
+            search_keywords)
         linked_in_fututre = executor.submit(
             linked_in_searcher.search_account,
             search_keywords)
         xing_future = executor.submit(
             xing_searcher.search_account,
             search_keywords)
-        twitter_future = executor.submit(
-            twitter_searcher.search_account,
-            search_keywords)
-        wait([linked_in_fututre, xing_future, twitter_future])
+        wait([twitter_future, linked_in_fututre, xing_future])
         result = [
             search_keywords[0],
             twitter_future.result(),

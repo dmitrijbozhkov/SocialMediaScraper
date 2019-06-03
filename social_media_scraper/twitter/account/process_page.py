@@ -1,4 +1,6 @@
 """ Browser operations for selenium driver and data gathering """
+import re
+import logging
 from datetime import datetime as dt
 from collections import namedtuple
 from selenium import webdriver
@@ -32,17 +34,26 @@ def get_tweet_datetime(tweet: tr.Element):
     timestamp = int(time_value) / 1000
     return dt.fromtimestamp(timestamp)
 
-def parse_stat_numbers(number: str):
+def search_digit(digit_string: str):
+    """ Get digit from string """
+    result = re.search(r"[\d.,]+", digit_string)
+    if result:
+        return float(result.group(0))
+
+def parse_stat_numbers(number_string: str):
     """ Parses tweet statistic numbers """
-    if not number:
-        return 0
-    if number[-1] == "K":
-        return int(float(number[0:-1]) * 1000)
-    if number[-1] == "M":
-        return int(float(number[0:-1]) * 1000)
-    if "," in number:
-        return int(float(number.replace(",", ".")) * 1000)
-    return int(number)
+    result_number = number_string
+    if not number_string:
+        return result_number
+    if "," in number_string:
+        result_number = number_string.replace(",", ".")
+    if "K" in number_string:
+        result_number = search_digit(result_number) * 1000
+    elif "M" in number_string:
+        result_number = search_digit(result_number) * 1000000
+    else:
+        result_number = result_number.replace(".", "")
+    return int(result_number)
 
 def prepare_english_link(link: str):
     """ Make twitter interface appear in english """
@@ -71,6 +82,7 @@ def get_twitter_page(driver: webdriver.Chrome, link: str) -> TwitterAccount:
     """ Prepares twitter page to be scraped """
     driver.get(prepare_english_link(link))
     scroll_untill_end(driver)
+    logging.info("Twitter page is ready!")
     return driver.find_element_by_css_selector(CONTENT).get_attribute("innerHTML")
 
 def collect_twitter_page(html: str, link: str):

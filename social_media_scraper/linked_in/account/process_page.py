@@ -1,8 +1,9 @@
 """ Browser operations and LinkedIn page profile scraping """
+import logging
 from typing import List
 from collections import namedtuple
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -78,9 +79,15 @@ def get_linked_in_page(driver: webdriver.Firefox, link: str):
     scroll_bottom(driver)
     driver.implicitly_wait(0.5)
     scroll_middle(driver)
-    WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, CONTENT)))
-    WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, EXPERIENCE_ELEMENT)))
-    WebDriverWait(driver, 900).until(EC.presence_of_element_located((By.CSS_SELECTOR, EDUCATION_ELEMENT)))
+    WebDriverWait(driver, 5) \
+        .until(EC.presence_of_element_located((By.CSS_SELECTOR, CONTENT)))
+    try:
+        WebDriverWait(driver, 5) \
+            .until(EC.presence_of_element_located((By.CSS_SELECTOR, EXPERIENCE_ELEMENT)))
+        WebDriverWait(driver, 5) \
+            .until(EC.presence_of_element_located((By.CSS_SELECTOR, EDUCATION_ELEMENT)))
+    except TimeoutException:
+        pass
     try:
         open_list(driver, EXPERIENCE_SECTION, MORE_LOCATOR, LESS_LOCATOR)
     except NoSuchElementException:
@@ -91,6 +98,7 @@ def get_linked_in_page(driver: webdriver.Firefox, link: str):
         pass
     open_list(driver, COMPANY_TIMELINE_BUTTONS, MORE_LOCATOR, LESS_LOCATOR)
     click_all(driver, BUTTON_MORE)
+    logging.info("LinkedIn page is ready!")
     return driver.find_element_by_css_selector(CONTENT).get_attribute("innerHTML")
 
 def collect_linked_in_page(html: str, link: str):

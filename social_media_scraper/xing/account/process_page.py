@@ -1,5 +1,6 @@
 """ Browser operations for Xing acount data scraping """
 import json
+import logging
 from datetime import datetime
 from functools import reduce
 from collections import namedtuple
@@ -102,6 +103,7 @@ def get_xing_page(driver: webdriver.Firefox, link: str):
     wait.until(EC.presence_of_element_located((By.XPATH, NAME)))
     outer_html = driver.find_element_by_css_selector(OUTER_CONTENT).get_attribute("innerHTML")
     inner_html = get_inner_html(driver)
+    logging.info("Xing page is ready!")
     return PageContent(outer_html, inner_html, link)
 
 def collect_xing_page(data: PageContent):
