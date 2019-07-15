@@ -37,8 +37,7 @@ def get_tweet_datetime(tweet: tr.Element):
 def search_digit(digit_string: str):
     """ Get digit from string """
     result = re.search(r"[\d.,]+", digit_string)
-    if result:
-        return float(result.group(0))
+    return float(result.group(0))
 
 def parse_stat_numbers(number_string: str):
     """ Parses tweet statistic numbers """
