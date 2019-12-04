@@ -37,72 +37,55 @@ def collect_tags(inner_element):
         reduce(compose_list, haves, ""),
         reduce(compose_list, wants, ""))
 
-def get_date_range(experience: dict):
-    """ Constructs timestamps from experience """
-    begin_year = experience.get("begin_date_year")
-    begin_month = experience.get("begin_date_month")
-    end_year = experience.get("end_date_year")
-    end_month = experience.get("end_date_month")
-    begin = None
-    end = None
-    if begin_year:
-        begin = datetime(
-            year=begin_year,
-            month=begin_month if begin_month else 1,
-            day=1)
-    if end_year:
-        end = datetime(
-            year=end_year,
-            month=end_month if end_month else 1,
-            day=1)
-    return (begin, end)
-
 def compose_experience(experience: dict):
     """ Composes XingWorkExperience from input dictionary """
-    date_range = get_date_range(experience)
     return XingWorkExperience(
-        position=experience.get("job_title"),
-        companyName=experience.get("company_name"),
-        startDate=date_range[0],
-        endDate=date_range[1])
+        position=experience["position"],
+        companyName=experience["companyName"],
+        date=experience["date"])
 
 def collect_work_experience(inner_element):
     """ Collects work experience from page """
-    work_element = lookup_element(inner_element, WORK_EXPERIENCE)
-    if work_element:
-        experinece_data = json.loads(work_element[0].get("value"))
-        return list(map(compose_experience, experinece_data))
-    else:
-        return []
+    work_entries = lookup_element(inner_element, ENTRY_BOX)[:-1]
+    experiences = []
+    for entry_box in work_entries:
+        for ex in lookup_element(entry_box, ENTRY_SELECTOR):
+            experiences.append(compose_experience({
+                "position": collect_element(ex, POSITION_SELECTOR),
+                "companyName": collect_element(ex, PLACE_SELECTOR),
+                "date": collect_element(ex, DATE_SELECTOR)
+            }))
+    return experiences
 
 def compose_education(education: dict):
     """ Compose XingEducation from input dictionary """
-    date_range = get_date_range(education)
     return XingEducation(
-        degree=education.get("degree"),
-        schoolName=education.get("school_name"),
-        subject=education.get("subject"),
-        schoolNotes=education.get("school_notes"),
-        startDate=date_range[0],
-        endDate=date_range[1])
+        degree=education["degree"],
+        schoolName=education["school_name"],
+        subject=education["subject"],
+        date=education["date"])
 
 def collect_education(inner_element):
     """ Collects education fom page """
-    education_element = lookup_element(inner_element, EDUCATION)
-    if education_element:
-        education_data = json.loads(education_element[0].get("value"))
-        return list(map(compose_education, education_data))
-    else:
-        return []
+    education_element = lookup_element(inner_element, ENTRY_BOX)[-1]
+    educations = []
+    for education in lookup_element(education_element, ENTRY_SELECTOR):
+        educations.append(compose_education({
+            "degree": collect_element(education, POSITION_SELECTOR),
+            "school_name": collect_element(education, PLACE_SELECTOR),
+            "subject": collect_element(education, EDUCATION_SUBJECT_SELECTOR),
+            "date": collect_element(education, DATE_SELECTOR)
+        }))
+    return educations
 
 def get_xing_page(driver: webdriver.Firefox, link: str):
     """ Set ups LinkedIn page to be scraped """
     driver.get(link)
     scroll_bottom(driver)
     wait = WebDriverWait(driver, 360)
-    wait.until(EC.presence_of_element_located((By.XPATH, NAME)))
-    outer_html = driver.find_element_by_css_selector(OUTER_CONTENT).get_attribute("innerHTML")
+    wait.until(EC.presence_of_all_elements_located((By.XPATH, ENTRY_BOX)))
     inner_html = get_inner_html(driver)
+    outer_html = driver.find_element_by_css_selector(OUTER_CONTENT).get_attribute("innerHTML")
     logging.info("Xing page is ready!")
     return PageContent(outer_html, inner_html, link)
 
@@ -111,8 +94,8 @@ def collect_xing_page(data: PageContent):
     outer_page = fromstring(data.outer)
     inner_page = fromstring(data.inner)
     tags = collect_tags(inner_page)
-    work_experience = collect_work_experience(inner_page)
-    education = collect_education(inner_page)
+    work_experience = collect_work_experience(outer_page)
+    education = collect_education(outer_page)
     return XingAccount(
         xingAccountId=data.link,
         name=collect_element(outer_page, NAME),

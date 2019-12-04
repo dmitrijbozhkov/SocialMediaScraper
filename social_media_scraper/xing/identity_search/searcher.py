@@ -5,7 +5,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from yarl import URL
 from social_media_scraper.identification.common_scripts import build_script, NOTHING_CHOSEN_CLASS
-from social_media_scraper.xing.page_elements import SEARCH_RESULT_LINKS, NO_RESULTS_CONTAINER
+from social_media_scraper.xing.page_elements import SEARCH_RESULT_LINKS, RESULTS_CONTAINER
 from social_media_scraper.identification.external_resources import Searcher
 
 SEARCH_LINK = URL("https://www.xing.com/search/members")
@@ -28,9 +28,8 @@ class XingSearcher(Searcher):
     def wait_page(self):
         """ Wait for page to be ready """
         wait = WebDriverWait(self.driver, 600)
-        wait.until(lambda d: \
-            EC.presence_of_element_located((By.CSS_SELECTOR, SEARCH_RESULT_LINKS)) or \
-            EC.text_to_be_present_in_element((By.CSS_SELECTOR, NO_RESULTS_CONTAINER), NO_MEMBERS_TEXT))
+        wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, SEARCH_RESULT_LINKS)) or \
+            EC.text_to_be_present_in_element((By.CSS_SELECTOR, RESULTS_CONTAINER), NO_MEMBERS_TEXT))
 
     def make_link(self, keywords: List[str]):
         """ Create twitter LinkedIn link """

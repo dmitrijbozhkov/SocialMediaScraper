@@ -12,9 +12,7 @@ class XingEducation(Base):
     degree = Column(String)
     schoolName = Column(String)
     subject = Column(String)
-    schoolNotes = Column(String)
-    startDate = Column(DateTime)
-    endDate = Column(DateTime)
+    date = Column(String)
     xingAccountId = Column(String, ForeignKey("XingAccount.xingAccountId"))
     xingAccount = relationship("XingAccount", back_populates="xingEducations")
 
@@ -23,8 +21,7 @@ class XingWorkExperience(Base):
     xingWorkExperienceId = Column(Integer, primary_key=True, autoincrement=True)
     position = Column(String)
     companyName = Column(String)
-    startDate = Column(DateTime)
-    endDate = Column(DateTime)
+    date = Column(String)
     xingAccountId = Column(String, ForeignKey("XingAccount.xingAccountId"))
     xingAccount = relationship("XingAccount", back_populates="xingWorkExperiences")
 

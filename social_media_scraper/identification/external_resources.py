@@ -1,8 +1,7 @@
 """ External resourses management (browser drivers and files) """
 from abc import ABC, abstractmethod
 from typing import List
-from social_media_scraper.identification.common_scripts import SCRIPT_FUNCTIONS
-from social_media_scraper.identification.common_scripts import NOTHING_CHOSEN_CLASS
+from social_media_scraper.identification.common_scripts import NOTHING_CHOSEN_CLASS, SCRIPT_FUNCTIONS
 
 class Searcher(ABC):
     """ Base class for account searchers to implement """
