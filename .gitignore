@@ -56,3 +56,6 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Addon
+social_media_scraper/_profile/

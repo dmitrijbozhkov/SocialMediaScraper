@@ -57,7 +57,7 @@ def run_command_line(args: dict):
     executor = ThreadPoolExecutor(3)
     reader = read_csv(args.input, True)
     scraping_steps.append(reader)
-    browsers = prepare_browsers(False, args.geckodriver)
+    browsers = prepare_browsers(False, args.geckodriver, args.twitter_profile)
     if args.mode == "acc":
         scraper = throttle_emissions(account_scraper(browsers, executor), args.lower_bound, args.upper_bound)
         writer = database_writer(args.output, Base, args.sql)

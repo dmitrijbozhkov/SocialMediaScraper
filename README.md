@@ -7,7 +7,7 @@
 Input data example is in __example.csv__ file.
 All Requirements are listed in requirements.txt file, but also [Gecko driver](https://github.com/mozilla/geckodriver/releases) must be in PATH.
 ### Running application
->python -m social_media_scraper [-h] -m MODE [-i INPUT] [-o OUTPUT] [-lb LOWER_BOUND] [-ub UPPER_BOUND] [-g GECKODRIVER] [-d] [-s] [-int]
+>python -m social_media_scraper [-h] -m MODE [-i INPUT] [-o OUTPUT] [-lb LOWER_BOUND] [-ub UPPER_BOUND] [-g GECKODRIVER] [-d] [-s] [-int] [-tp TWITTER_PROFILE]
 
 #### Arguments
   __-h, --help__
@@ -37,9 +37,15 @@ All Requirements are listed in requirements.txt file, but also [Gecko driver](ht
   __-s, --sql__
   log sql into console
 
+  __-int, --interface__
+  Run app in account scraping mode with interface
+
+  __-tp TWITTER_PROFILE, --twitter_profile TWITTER_PROFILE__
+  Firefox profile path for twitter (Should have GoodTwitter addon because of redesign)
+
 #### Example command
 
-> python -m social_media_scraper -m full -i "./example-identification.csv" -o "./output.db" -lb 1 -ub 3 -d -s -g "/path/to/driver/geckodriver.exe"
+> python -m social_media_scraper -m full -i "./example-identification.csv" -o "./output.db" -lb 1 -ub 3 -d -s -tp "/path/to/firefox/profile/folder/" -g "/path/to/driver/geckodriver.exe"
 
 ## company_scraper
 

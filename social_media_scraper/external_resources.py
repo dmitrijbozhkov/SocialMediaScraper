@@ -67,16 +67,17 @@ def throttle_emissions(generator: Generator, lower_limit: int, upper_limit: int)
     except Exception as ex:
         generator.throw(ex)
 
-def prepare_browsers(headless: bool, driver_path: str) -> Browsers:
+def prepare_browsers(headless: bool, driver_path: str, twitter_profile_path: str) -> Browsers:
     """
     Sets up browsers to search accounts
     :param headless bool: Should search be performed in headless mode
+    :param driver_path: Path to geckodriver
+    :param twitter_profile_path: Path to twitter profile folder
     :return: tuple of browsers, that are logged in LinkedIn and Xing
     """
+    logging.info("Running Twitter scraper from profile in %s", twitter_profile_path)
     driver_path = driver_path if driver_path else "geckodriver"
     profile = FirefoxProfile()
-    profile.set_preference("intl.accept_languages", "en-US,en;q=0.5")
-    profile.update_preferences()
     logins = social_media_logins(driver_path, profile)
     driver_options = FirefoxOptions()
     driver_options.headless = headless
@@ -90,7 +91,7 @@ def prepare_browsers(headless: bool, driver_path: str) -> Browsers:
         executable_path=driver_path)
     twitter_driver = Firefox(
         options=driver_options,
-        firefox_profile=profile,
+        firefox_profile=FirefoxProfile(twitter_profile_path),
         executable_path=driver_path)
     set_login_data(linked_in_driver, logins[0])
     set_login_data(xing_driver, logins[1])

@@ -28,5 +28,5 @@ if (frameElement) {
 return 1;
 """
 # Xing search selectors
-RESULTS_CONTAINER = "div[data-qa='results-overview']"
+NO_RESULTS_CONTAINER = "//div[contains(text(), 'No members found') and @data-qa='results-overview']"
 SEARCH_RESULT_LINKS = "div[data-qa=\"results-list\"] > a"

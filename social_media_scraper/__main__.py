@@ -20,6 +20,7 @@ parser.add_argument("-g", "--geckodriver", type=str, help="Set path for geckodri
 parser.add_argument("-d", "--debugging", help="Runs application in debug mode (will log debug logs into console)", action="store_true")
 parser.add_argument("-s", "--sql", help="Log sql into console", action="store_true")
 parser.add_argument("-int", "--interface", help="Run app in account scraping mode with interface", action="store_true")
+parser.add_argument("-tp", "--twitter_profile", help="Firefox profile path for twitter (Should have GoodTwitter addon because of redesign)", type=str)
 
 args = parser.parse_args()
 
