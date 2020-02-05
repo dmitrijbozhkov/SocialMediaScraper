@@ -22,6 +22,7 @@ class XingWorkExperience(Base):
     position = Column(String)
     companyName = Column(String)
     date = Column(String)
+    description = Column(String)
     xingAccountId = Column(String, ForeignKey("XingAccount.xingAccountId"))
     xingAccount = relationship("XingAccount", back_populates="xingWorkExperiences")
 

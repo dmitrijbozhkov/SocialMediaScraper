@@ -2,13 +2,14 @@
 from social_media_scraper.account.page_utils import to_xpath
 
 # Xing profile selectors
-NAME = to_xpath("h2[data-qa='malt-profile-display-name']")
+NAME = to_xpath("h1[class*='userName']")
 CURRENT_POSITION = to_xpath("div[data-qa='profile-occupations'] p")
 LOCATION = to_xpath("div[data-qa='profile-location'] p")
-ENTRY_BOX = to_xpath("div[class*='bucket-bucket-odl-content']")
-ENTRY_SELECTOR = to_xpath("button")
-POSITION_SELECTOR = to_xpath("h3")
-PLACE_SELECTOR = to_xpath("h3 + p")
+ENTRIES_LOCATOR = "//*[self::h2='Educational background' or self::div[contains(@class, 'entryOverview')]]"
+POSITION_SELECTOR = to_xpath("h2")
+INFO_SELECTOR = to_xpath("p")
+TIME_SELECTOR = to_xpath("div[class*='entryTime'] > p")
+DESCRIPTION_SELECTOR = to_xpath("span")
 EDUCATION_SUBJECT_SELECTOR = to_xpath("p[class*='entryOverview-entryOverview-description'] > span")
 DATE_SELECTOR = to_xpath("div[class*='entryTime-entryTime-time'] > p")
 HAVES = to_xpath("#haves li")

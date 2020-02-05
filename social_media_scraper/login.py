@@ -11,7 +11,7 @@ from selenium.common.exceptions import WebDriverException
 LoginData = namedtuple("LoginData", ["cookies", "localstorage", "link"])
 
 LINKED_IN_SUCCESS_ELEMENT = ".feed-container-theme.feed-outlet"
-XING_SUCCESS_ELEMENT = "a[class*='Me-Me-profile']"
+XING_SUCCESS_ELEMENT = "p[class*='Me-userName']"
 LINKED_IN_404_PAGE = "https://www.linkedin.com/404"
 XING_404_PAGE = "https://xing.com/404"
 LINKED_IN_LOGIN_PAGE = "https://www.linkedin.com/uas/login"
