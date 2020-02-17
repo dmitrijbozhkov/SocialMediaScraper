@@ -67,6 +67,20 @@ def throttle_emissions(generator: Generator, lower_limit: int, upper_limit: int)
     except Exception as ex:
         generator.throw(ex)
 
+def retoggleAllTheAddons(driver):
+    """ Get all addons to work! """
+    driver.get("about:addons")
+    driver.find_element_by_id("category-extension").click()
+    driver.execute_script("""
+        let hb = document.getElementById("html-view-browser");
+        let al = hb.contentWindow.window.document.getElementsByTagName("addon-list")[0];
+        let cards = al.getElementsByTagName("addon-card");
+        for(let card of cards){
+            card.addon.disable();
+            card.addon.enable();
+        }
+    """)
+
 def prepare_browsers(headless: bool, driver_path: str, twitter_profile_path: str) -> Browsers:
     """
     Sets up browsers to search accounts
@@ -78,6 +92,9 @@ def prepare_browsers(headless: bool, driver_path: str, twitter_profile_path: str
     logging.info("Running Twitter scraper from profile in %s", twitter_profile_path)
     driver_path = driver_path if driver_path else "geckodriver"
     profile = FirefoxProfile()
+    twitter_profile = FirefoxProfile(twitter_profile_path)
+    twitter_profile.DEFAULT_PREFERENCES["frozen"]["extensions.autoDisableScopes"] = 0
+    twitter_profile.set_preference("extensions.enabledScopes", 15)
     logins = social_media_logins(driver_path, profile)
     driver_options = FirefoxOptions()
     driver_options.headless = headless
@@ -91,10 +108,11 @@ def prepare_browsers(headless: bool, driver_path: str, twitter_profile_path: str
         executable_path=driver_path)
     twitter_driver = Firefox(
         options=driver_options,
-        firefox_profile=FirefoxProfile(twitter_profile_path),
+        firefox_profile=twitter_profile,
         executable_path=driver_path)
     set_login_data(linked_in_driver, logins[0])
     set_login_data(xing_driver, logins[1])
+    retoggleAllTheAddons(twitter_driver)
     return Browsers(linked_in_driver, xing_driver, twitter_driver)
 
 def database_writer(database_path: str, base, echo=False):

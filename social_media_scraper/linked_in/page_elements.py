@@ -2,9 +2,8 @@
 from social_media_scraper.account.page_utils import to_xpath
 
 # LinkedIn user info page selectors
-NAME = to_xpath(".pv-top-card-section__name")
-CURRENT_POSITION = to_xpath(".pv-top-card-section__headline")
-LOCATION = to_xpath(".pv-top-card-section__location")
+NAME_LOCATION_SELECTOR = to_xpath("ul.pv-top-card--list > li:first-child")
+CURRENT_POSITION = to_xpath(".mt2 h2")
 EXPERIENCE_RECORD = to_xpath(".pv-position-entity")
 EDUCATION_RECORD = to_xpath(".pv-education-entity")
 EXPERIENCE_POSITION = to_xpath(".pv-entity__summary-info h3")

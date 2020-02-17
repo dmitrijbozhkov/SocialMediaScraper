@@ -104,15 +104,14 @@ def get_linked_in_page(driver: webdriver.Firefox, link: str):
 def collect_linked_in_page(html: str, link: str):
     """ Gathers data rom LinkedIn page """
     page = fromstring(html)
-    name = collect_element(page, NAME)
+    name_and_location = lookup_element(page, NAME_LOCATION_SELECTOR)
     current_position = collect_element(page, CURRENT_POSITION)
-    location = collect_element(page, LOCATION)
     experiences = collect_experience(page)
     education_records = collect_education(page)
     return LinkedInAccount(
         linkedInAccountId=link,
-        name=name,
+        name=name_and_location[0].text_content(),
         currentPosition=current_position,
-        locaton=location,
+        locaton=name_and_location[1].text_content(),
         linkedInWorkExperiences=experiences,
         linkedInEducations=education_records)
