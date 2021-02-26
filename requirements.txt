@@ -5,5 +5,5 @@ SQLAlchemy==1.3.3
 selenium==3.141.0
 yarl==1.3.0
 typing==3.7.4
-aiohttp==3.5.4
+aiohttp==3.7.4
 newspaper==0.1.0.7
